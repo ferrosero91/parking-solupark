@@ -58,6 +58,7 @@ jobs:
         echo "DATABASE_HOST=localhost" >> .env
         echo "DATABASE_PORT=5432" >> .env
         echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
+        echo "CI=true" >> .env
     
     - name: Verificar formato con Black
       run: |

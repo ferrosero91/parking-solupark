@@ -124,6 +124,14 @@ if DATABASE_ENGINE == 'django.db.backends.sqlite3':
     }
 else:
     # PostgreSQL para producción
+    db_options = {
+        'connect_timeout': 60,
+    }
+    
+    # Solo requerir SSL en producción (no en CI/testing)
+    if not DEBUG and os.environ.get('CI') != 'true':
+        db_options['sslmode'] = 'require'
+    
     DATABASES = {
         'default': {
             'ENGINE': DATABASE_ENGINE,
@@ -132,10 +140,7 @@ else:
             'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
             'HOST': os.environ.get('DATABASE_HOST'),
             'PORT': os.environ.get('DATABASE_PORT', '5432'),
-            'OPTIONS': {
-                'connect_timeout': 60,
-                'sslmode': 'require',
-            },
+            'OPTIONS': db_options,
         }
     }
 
@@ -171,10 +176,14 @@ NUMBER_GROUPING = 3
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-    BASE_DIR / 'parking' / 'static',
-]
+
+# Solo incluir directorios que existan
+STATICFILES_DIRS = []
+if (BASE_DIR / 'static').exists():
+    STATICFILES_DIRS.append(BASE_DIR / 'static')
+if (BASE_DIR / 'parking' / 'static').exists():
+    STATICFILES_DIRS.append(BASE_DIR / 'parking' / 'static')
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Configuración de WhiteNoise para servir archivos estáticos
