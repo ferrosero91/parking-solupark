@@ -271,7 +271,46 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        form.submit();
+        // Enviar formulario y abrir ticket en nueva ventana
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.ticket_id) {
+                    // Abrir ticket en nueva ventana
+                    window.open(`/print-ticket/?ticket_id=${result.ticket_id}`, '_blank', 'width=800,height=600');
+                    
+                    // Limpiar formulario
+                    form.reset();
+                    cascosContainer.style.display = 'none';
+                    
+                    // Mostrar mensaje de éxito
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: 'Vehículo registrado correctamente',
+                        confirmButtonColor: '#0ea5e9',
+                        timer: 2000
+                    });
+                }
+            } else {
+                // Si hay error, enviar formulario normalmente
+                form.submit();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // Si hay error, enviar formulario normalmente
+            form.submit();
+        }
     });
 });
 </script>

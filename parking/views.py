@@ -109,8 +109,24 @@ class VehicleEntryView(CreateView):
                 form.instance.cascos = int(cascos)
             response = super().form_valid(form)
             self.request.session['ticket_id'] = str(self.object.id)
+            
+            # Si es una petición AJAX, devolver JSON
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                from django.http import JsonResponse
+                return JsonResponse({
+                    'success': True,
+                    'ticket_id': str(self.object.id),
+                    'message': 'Vehículo registrado correctamente'
+                })
+            
             return response
         except IntegrityError:
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                from django.http import JsonResponse
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Este vehículo ya se encuentra en el estacionamiento.'
+                }, status=400)
             messages.error(self.request, 'Este vehículo ya se encuentra en el estacionamiento.')
             return self.form_invalid(form)
 
@@ -200,7 +216,31 @@ def vehicle_exit(request):
 @require_parking_lot
 @require_active_subscription
 def print_exit_ticket(request):
-    if request.method != 'POST':
+    # Permitir GET para abrir el ticket en nueva ventana
+    if request.method == 'GET':
+        ticket_id = request.GET.get('ticket_id')
+        if ticket_id:
+            try:
+                ticket = ParkingTicket.objects.select_related('category', 'parking_lot').get(
+                    id=ticket_id,
+                    parking_lot=request.current_parking_lot
+                )
+                
+                # Calcular el cambio si existe
+                amount_received = float(request.GET.get('amount_received', ticket.amount_paid))
+                change = amount_received - float(ticket.amount_paid)
+                
+                return render(request, 'parking/print_exit_ticket.html', {
+                    'ticket': ticket,
+                    'parking_lot': request.current_parking_lot,
+                    'amount_received': amount_received,
+                    'change': change,
+                    'current_time': timezone.now(),
+                })
+            except ParkingTicket.DoesNotExist:
+                messages.error(request, 'Ticket no encontrado')
+                return redirect('dashboard')
+        
         messages.warning(request, 'Método no permitido')
         return redirect('dashboard')
     
@@ -209,6 +249,8 @@ def print_exit_ticket(request):
     payment_method_id = request.POST.get('payment_method')
 
     if not ticket_id or not amount_received:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Datos incompletos'}, status=400)
         messages.error(request, 'Datos incompletos')
         return redirect('vehicle-exit')
 
@@ -216,6 +258,8 @@ def print_exit_ticket(request):
         # Validar monto recibido
         amount_received_decimal = float(amount_received)
         if amount_received_decimal < 0:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'El monto recibido no puede ser negativo'}, status=400)
             messages.error(request, 'El monto recibido no puede ser negativo')
             return redirect('vehicle-exit')
         
@@ -235,10 +279,16 @@ def print_exit_ticket(request):
             # Calcular el cambio
             amount_paid = float(ticket.amount_paid)
             change = amount_received_decimal - amount_paid
-            
-            # Invalidar caché del dashboard
-            cache_key = f'dashboard_stats_{request.current_parking_lot.id}_{timezone.now().date()}'
-            cache.delete(cache_key)
+
+        # Si es una petición AJAX, devolver JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'ticket_id': str(ticket.id),
+                'amount_received': amount_received_decimal,
+                'change': change,
+                'message': 'Salida registrada correctamente'
+            })
 
         return render(request, 'parking/print_exit_ticket.html', {
             'ticket': ticket,
@@ -249,9 +299,13 @@ def print_exit_ticket(request):
         })
         
     except ParkingTicket.DoesNotExist:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Ticket no encontrado o ya tiene salida registrada'}, status=404)
         messages.error(request, 'Ticket no encontrado, ya tiene salida registrada o no tienes permiso')
         return redirect('dashboard')
     except ValueError:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'El monto recibido no es válido'}, status=400)
         messages.error(request, 'El monto recibido no es válido')
         return redirect('vehicle-exit')
     except Exception as e:
@@ -260,6 +314,8 @@ def print_exit_ticket(request):
         logger = logging.getLogger(__name__)
         logger.error(f'Error en print_exit_ticket: {str(e)}', exc_info=True)
         
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'Error al procesar la salida'}, status=500)
         messages.error(request, 'Error al procesar la salida del vehículo')
         return redirect('dashboard')
 
@@ -278,16 +334,6 @@ def dashboard(request):
     start_date = today - timedelta(days=7)
     start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
     end_datetime = timezone.make_aware(datetime.combine(today, datetime.max.time()))
-    
-    # Usar caché para estadísticas (válido por 5 minutos)
-    from django.core.cache import cache
-    cache_key = f'dashboard_stats_{parking_lot.id}_{today}'
-    cached_stats = cache.get(cache_key)
-    
-    if cached_stats:
-        context = cached_stats
-        context['current_time'] = timezone.now()
-        return render(request, 'parking/dashboard.html', context)
     
     # Obtener tickets que entraron en los últimos 7 días (optimizado con only)
     recent_tickets_count = ParkingTicket.objects.filter(
@@ -328,7 +374,7 @@ def dashboard(request):
     active_vehicles = ParkingTicket.objects.filter(
         parking_lot=parking_lot,
         exit_time__isnull=True
-    ).select_related('category').only('id', 'placa', 'entry_time', 'category__name')
+    ).select_related('category', 'parking_lot').order_by('-entry_time')
 
     # Estadísticas diarias de los últimos 7 días
     daily_stats = ParkingTicket.objects.filter(
@@ -400,9 +446,6 @@ def dashboard(request):
         'current_time': timezone.now(),
         'subscription_alert': subscription_alert
     }
-    
-    # Cachear por 5 minutos
-    cache.set(cache_key, context, 300)
 
     return render(request, 'parking/dashboard.html', context)
 @login_required

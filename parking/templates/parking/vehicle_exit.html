@@ -208,17 +208,63 @@
         document.getElementById('change').textContent = `$${change.toFixed(2)}`;
     });
 
-    document.getElementById('payment-form').addEventListener('submit', function(e) {
+    document.getElementById('payment-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
         const amountReceived = parseFloat(document.getElementById('amount_received').value) || 0;
         const amountToPay = parseFloat(document.getElementById('amount').textContent) || 0;
-        if (amountReceived < amountToPay) {
-            e.preventDefault();
+        const selectedMethod = document.querySelector('.payment-method-radio:checked');
+        const methodLabel = selectedMethod ? selectedMethod.closest('label').querySelector('p').textContent.trim().toUpperCase() : '';
+        
+        if (methodLabel === 'EFECTIVO' && amountReceived < amountToPay) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
                 text: 'El monto pagado debe ser mayor o igual al total a pagar',
                 confirmButtonColor: '#3B82F6'
             });
+            return;
+        }
+        
+        // Enviar formulario y abrir ticket en nueva ventana
+        const formData = new FormData(this);
+        
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.ticket_id) {
+                    // Abrir ticket en nueva ventana
+                    window.open(`/print-exit-ticket/?ticket_id=${result.ticket_id}`, '_blank', 'width=800,height=600');
+                    
+                    // Limpiar formulario y ocultar detalles
+                    document.getElementById('vehicle-details').style.display = 'none';
+                    document.getElementById('search-form').reset();
+                    
+                    // Mostrar mensaje de éxito
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: 'Salida registrada correctamente',
+                        confirmButtonColor: '#3B82F6',
+                        timer: 2000
+                    });
+                }
+            } else {
+                // Si hay error, enviar formulario normalmente
+                this.submit();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // Si hay error, enviar formulario normalmente
+            this.submit();
         }
     });
 
