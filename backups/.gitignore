@@ -1,0 +1,7 @@
+# Ignorar todos los archivos de backup
+*.sql
+*.sqlite3
+*.json
+
+# Pero mantener este directorio en git
+!.gitignore

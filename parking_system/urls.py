@@ -30,6 +30,13 @@ urlpatterns = [
     path('superadmin/payments/<int:pk>/history/', admin_views.payment_history, name='payment_history'),
     path('superadmin/subscription-plans/', admin_views.subscription_plans, name='subscription_plans'),
     
+    # Rutas de Backup y Restauración
+    path('superadmin/backups/', admin_views.backup_management, name='backup_management'),
+    path('superadmin/backups/export/<int:pk>/', admin_views.export_parking_lot, name='export_parking_lot'),
+    path('superadmin/backups/export-full/', admin_views.export_full_database, name='export_full_database'),
+    path('superadmin/backups/restore/', admin_views.restore_parking_lot, name='restore_parking_lot'),
+    path('superadmin/backups/restore-full/', admin_views.restore_full_database, name='restore_full_database'),
+    
     # Rutas de usuarios normales (clientes)
     path('dashboard/', views.dashboard, name='dashboard'),
     path('entry/', VehicleEntryView.as_view(), name='vehicle-entry'),

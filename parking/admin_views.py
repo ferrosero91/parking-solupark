@@ -448,3 +448,178 @@ def subscription_plans(request):
         'plans': plans,
     }
     return render(request, 'parking/superadmin/subscription_plans.html', context)
+
+
+
+@superuser_required
+def backup_management(request):
+    """Vista para gestionar backups"""
+    parking_lots = ParkingLot.objects.all().select_related('user')
+    
+    context = {
+        'parking_lots': parking_lots,
+    }
+    return render(request, 'parking/superadmin/backup_management.html', context)
+
+
+@superuser_required
+def export_parking_lot(request, pk):
+    """Exportar datos de un parqueadero específico"""
+    from .backup_service import BackupService
+    import json
+    from django.http import HttpResponse
+    
+    result = BackupService.export_parking_lot_data(pk)
+    
+    if result['success']:
+        # Crear respuesta JSON para descarga
+        response = HttpResponse(
+            json.dumps(result['data'], indent=2, ensure_ascii=False),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{result["filename"]}"'
+        return response
+    else:
+        messages.error(request, f'Error al exportar: {result["error"]}')
+        return redirect('backup_management')
+
+
+@superuser_required
+def export_full_database(request):
+    """Exportar toda la base de datos"""
+    from .backup_service import BackupService
+    from django.http import HttpResponse, FileResponse
+    import shutil
+    import os
+    
+    result = BackupService.export_full_database()
+    
+    if result['success']:
+        if result['type'] == 'sqlite':
+            # Copiar archivo SQLite
+            source_path = result['source_path']
+            
+            try:
+                response = FileResponse(
+                    open(source_path, 'rb'),
+                    content_type='application/x-sqlite3'
+                )
+                response['Content-Disposition'] = f'attachment; filename="{result["filename"]}"'
+                return response
+            except Exception as e:
+                messages.error(request, f'Error al exportar base de datos: {str(e)}')
+                return redirect('backup_management')
+                
+        elif result['type'] == 'postgresql':
+            # Para PostgreSQL, descargar el archivo creado
+            backup_path = result.get('path')
+            
+            if backup_path and os.path.exists(backup_path):
+                try:
+                    response = FileResponse(
+                        open(backup_path, 'rb'),
+                        content_type='application/sql'
+                    )
+                    response['Content-Disposition'] = f'attachment; filename="{result["filename"]}"'
+                    return response
+                except Exception as e:
+                    messages.error(request, f'Error al descargar backup: {str(e)}')
+                    return redirect('backup_management')
+            else:
+                messages.error(request, 'No se pudo crear el backup de PostgreSQL')
+                return redirect('backup_management')
+    else:
+        messages.error(request, f'Error: {result["error"]}')
+        return redirect('backup_management')
+
+
+@superuser_required
+def restore_parking_lot(request):
+    """Restaurar datos de un parqueadero desde un backup"""
+    from .backup_service import BackupService
+    import json
+    
+    if request.method == 'POST':
+        try:
+            backup_file = request.FILES.get('backup_file')
+            overwrite = request.POST.get('overwrite') == 'on'
+            
+            if not backup_file:
+                messages.error(request, 'No se seleccionó ningún archivo')
+                return redirect('backup_management')
+            
+            # Leer el archivo JSON
+            backup_data = json.loads(backup_file.read().decode('utf-8'))
+            
+            # Restaurar datos
+            result = BackupService.restore_parking_lot_data(backup_data, overwrite=overwrite)
+            
+            if result['success']:
+                messages.success(
+                    request, 
+                    f'Parqueadero "{result["parking_lot_name"]}" restaurado exitosamente. '
+                    f'Registros restaurados: {result["restored_counts"]}'
+                )
+            else:
+                messages.error(request, f'Error al restaurar: {result["error"]}')
+                
+        except json.JSONDecodeError:
+            messages.error(request, 'El archivo no es un JSON válido')
+        except Exception as e:
+            messages.error(request, f'Error al restaurar: {str(e)}')
+    
+    return redirect('backup_management')
+
+
+@superuser_required
+def restore_full_database(request):
+    """Restaurar toda la base de datos desde un backup"""
+    from .backup_service import BackupService
+    import os
+    from django.conf import settings
+    
+    if request.method == 'POST':
+        try:
+            backup_file = request.FILES.get('backup_file')
+            
+            if not backup_file:
+                messages.error(request, 'No se seleccionó ningún archivo')
+                return redirect('backup_management')
+            
+            # Guardar el archivo temporalmente
+            temp_path = os.path.join(settings.BASE_DIR, 'temp_restore_backup')
+            
+            with open(temp_path, 'wb+') as destination:
+                for chunk in backup_file.chunks():
+                    destination.write(chunk)
+            
+            # Restaurar base de datos
+            result = BackupService.restore_full_database(temp_path)
+            
+            if result['success']:
+                if result.get('type') == 'postgresql':
+                    # Mostrar instrucciones para PostgreSQL
+                    messages.info(request, result['instructions'])
+                else:
+                    messages.success(
+                        request, 
+                        f'{result["message"]}. Backup del archivo anterior guardado en: {result["backup_of_current"]}'
+                    )
+                    messages.warning(
+                        request,
+                        'IMPORTANTE: Reinicia el servidor Django para que los cambios surtan efecto.'
+                    )
+            else:
+                messages.error(request, f'Error al restaurar: {result["error"]}')
+            
+            # Eliminar archivo temporal
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                
+        except Exception as e:
+            messages.error(request, f'Error al restaurar base de datos: {str(e)}')
+            # Limpiar archivo temporal en caso de error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    
+    return redirect('backup_management')
