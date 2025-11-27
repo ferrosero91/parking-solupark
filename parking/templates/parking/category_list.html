@@ -1,0 +1,184 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Mensajes de alerta -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-green-50 border-2 border-green-200{% elif message.tags == 'error' %}bg-red-50 border-2 border-red-200{% else %}bg-blue-50 border-2 border-blue-200{% endif %} animate-fade-in">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                    {% endif %}
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">
+                        {{ message }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                Categorías
+            </h1>
+            <p class="text-gray-600 flex items-center">
+                <i class="fas fa-tags mr-2 text-primary"></i>
+                Gestione las categorías y tarifas de vehículos
+            </p>
+        </div>
+        <a href="{% url 'category-create' %}" 
+           class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <i class="fas fa-plus-circle mr-2 text-lg"></i>
+            Nueva Categoría
+        </a>
+    </div>
+
+    <div class="glass-effect rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                        <th scope="col" class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-tag text-primary"></i>
+                                <span>Nombre</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-dollar-sign text-success"></i>
+                                <span>Tarifas</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-calendar-alt text-warning"></i>
+                                <span>Mensual</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-cog text-primary"></i>
+                                <span>Acciones</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for category in object_list %}
+                    <tr class="table-row">
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-3 rounded-xl mr-4">
+                                    <i class="fas fa-tag text-primary text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-gray-800">{{ category.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 md:px-6 py-4 hidden sm:table-cell">
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <span class="px-3 py-1 bg-success-light text-success-color rounded-lg text-xs font-semibold">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        1ª hora: ${{ category.first_hour_rate|floatformat:0 }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="px-3 py-1 bg-primary-light text-info-color rounded-lg text-xs font-semibold">
+                                        <i class="fas fa-plus mr-1"></i>
+                                        Adicional: ${{ category.additional_hour_rate|floatformat:0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 md:px-6 py-4 hidden md:table-cell">
+                            {% if category.is_monthly %}
+                                <span class="px-3 py-1.5 bg-warning-light text-warning-color rounded-lg text-xs font-bold inline-flex items-center">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Mensual: ${{ category.monthly_rate|floatformat:0 }}
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    Por horas
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            <div class="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
+                                <a href="{% url 'category-edit' pk=category.id %}" 
+                                   class="inline-flex items-center justify-center px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg gradient-primary text-white text-xs font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-edit mr-1 text-xs"></i>
+                                    <span class="hidden sm:inline">Editar</span><span class="sm:hidden">Edit</span>
+                                </a>
+                                <button onclick="deleteCategory('{{ category.id }}')" 
+                                        class="inline-flex items-center justify-center px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg gradient-danger text-white text-xs font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-trash-alt mr-1 text-xs"></i>
+                                    <span class="hidden sm:inline">Eliminar</span><span class="sm:hidden">Del</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-gray-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-folder-open text-gray-400 text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium text-lg mb-2">No hay categorías disponibles</p>
+                                <p class="text-gray-500 text-sm mb-4">Crea tu primera categoría para comenzar</p>
+                                <a href="{% url 'category-create' %}" 
+                                   class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                                    <i class="fas fa-plus-circle mr-2"></i>
+                                    Crear Primera Categoría
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function deleteCategory(categoryId) {
+    if (!categoryId || isNaN(categoryId)) {
+        console.error("ID de categoría inválido:", categoryId);
+        return;
+    }
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3B82F6',
+        cancelButtonColor: '#EF4444',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/categorias/${categoryId}/eliminar/`;
+        }
+    })
+}
+</script>
+{% endblock %}

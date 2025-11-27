@@ -1,0 +1,150 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="space-y-4 sm:space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                Medios de Pago
+            </h1>
+            <p class="text-gray-600 flex items-center">
+                <i class="fas fa-wallet mr-2 text-primary"></i>
+                Gestione los medios de pago disponibles
+            </p>
+        </div>
+        <a href="{% url 'payment-method-create' %}" 
+           class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <i class="fas fa-plus-circle mr-2 text-lg"></i>
+            Nuevo Medio de Pago
+        </a>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-success-light text-success-color{% elif message.tags == 'error' %}bg-danger-light text-danger-color{% else %}bg-primary-light text-info-color{% endif %} animate-fade-in">
+            <div class="flex items-center">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} text-xl mr-3"></i>
+                <p class="font-medium">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Lista de Medios de Pago -->
+    <div class="glass-effect rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-sort-numeric-down text-primary mr-2"></i>Orden
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-wallet text-primary mr-2"></i>Medio de Pago
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                            <i class="fas fa-align-left text-primary mr-2"></i>Descripción
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-toggle-on text-primary mr-2"></i>Estado
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-cog text-primary mr-2"></i>Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for method in payment_methods %}
+                    <tr class="table-row {% if not method.is_active %}opacity-60{% endif %}">
+                        <td class="px-3 md:px-6 py-4">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-light text-primary font-bold text-sm">
+                                {{ method.orden }}
+                            </span>
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="bg-primary-light p-2.5 rounded-lg mr-3">
+                                    <i class="fas {{ method.icono }} text-primary text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-gray-800">{{ method.nombre }}</div>
+                                    <div class="text-xs text-gray-500 md:hidden">{{ method.descripcion|default:"Sin descripción" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 md:px-6 py-4 hidden md:table-cell">
+                            <span class="text-sm text-gray-700">{{ method.descripcion|default:"—" }}</span>
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            {% if method.is_active %}
+                            <span class="px-3 py-1.5 bg-success-light text-success-color rounded-lg text-xs font-bold inline-flex items-center">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Activo
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-xs font-bold inline-flex items-center">
+                                <i class="fas fa-pause-circle mr-1"></i>
+                                Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            <div class="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+                                <a href="{% url 'payment-method-edit' pk=method.id %}" 
+                                   class="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg gradient-primary text-white text-xs font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-edit mr-1 text-xs"></i>Editar
+                                </a>
+                                <button onclick="deletePaymentMethod('{{ method.id }}')" 
+                                        class="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg gradient-danger text-white text-xs font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-trash-alt mr-1 text-xs"></i><span class="hidden sm:inline">Eliminar</span><span class="sm:hidden">Del</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-gray-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-wallet text-gray-400 text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium text-lg mb-2">No hay medios de pago registrados</p>
+                                <p class="text-gray-500 text-sm mb-4">Crea tu primer medio de pago para comenzar</p>
+                                <a href="{% url 'payment-method-create' %}" 
+                                   class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                                    <i class="fas fa-plus-circle mr-2"></i>
+                                    Crear Primer Medio de Pago
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function deletePaymentMethod(methodId) {
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Esta acción no se puede deshacer. Si el medio de pago está siendo usado, no se podrá eliminar.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3B82F6',
+        cancelButtonColor: '#EF4444',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/medios-pago/${methodId}/eliminar/`;
+        }
+    })
+}
+</script>
+{% endblock %}

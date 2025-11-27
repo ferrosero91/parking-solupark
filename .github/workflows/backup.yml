@@ -1,0 +1,46 @@
+name: Backup Automático
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Diario a las 2 AM
+  workflow_dispatch:
+
+jobs:
+  backup-database:
+    name: Backup de Base de Datos
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+    
+    - name: Crear backup de PostgreSQL
+      run: |
+        echo "📦 Creando backup de base de datos..."
+        # Este es un ejemplo, ajusta según tu configuración
+        # PGPASSWORD=${{ secrets.DATABASE_PASSWORD }} pg_dump -h ${{ secrets.DATABASE_HOST }} -U ${{ secrets.DATABASE_USER }} ${{ secrets.DATABASE_NAME }} > backup.sql
+    
+    - name: Comprimir backup
+      run: |
+        tar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz backup.sql
+    
+    - name: Subir backup a S3 (opcional)
+      if: false  # Habilitar si usas S3
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Guardar backup como artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: database-backup-${{ github.run_number }}
+        path: backup-*.tar.gz
+        retention-days: 30
+    
+    - name: Notificar backup completado
+      run: |
+        echo "✅ Backup completado exitosamente"
+        echo "Fecha: $(date)"

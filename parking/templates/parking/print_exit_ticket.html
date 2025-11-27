@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset="UTF-8">
+   <style>
+       @page {
+           size: 58mm auto;
+           margin: 0;
+       }
+       body {
+           width: 58mm;
+           margin: 0;
+           padding: 2mm;
+           font-family: monospace;
+           font-size: 12px;
+       }
+       .header {
+           text-align: center;
+           margin-bottom: 10px;
+           border-bottom: 1px dashed black;
+           padding-bottom: 5px;
+       }
+       .company-info {
+           text-align: center;
+           margin-bottom: 10px;
+           font-size: 10px;
+       }
+       .ticket-info {
+           margin: 5px 0;
+       }
+       .barcode {
+           text-align: center;
+           margin: 10px 0;
+       }
+       .barcode img {
+           width: 54mm;
+           height: auto;
+       }
+       .cascos-info {
+           margin: 5px 0;
+           padding: 3px 0;
+           border-top: 1px dotted black;
+           border-bottom: 1px dotted black;
+       }
+   </style>
+</head>
+<body>
+   <div class="header">
+       <div class="company-info">
+           <strong>{{ parking_lot.empresa }}</strong><br>
+           {{ parking_lot.empresa }}<br>
+           NIT: {{ parking_lot.nit }}<br>
+           Tel: {{ parking_lot.telefono }}<br>
+           {{ parking_lot.direccion }}
+       </div>
+       <h1 style="font-size: 10px; margin: 5px 0;">TICKET DE SALIDA</h1>
+   </div>
+   
+   <div class="ticket-info">
+       ID: {{ ticket.ticket_id }}<br>
+       Placa: {{ ticket.placa }}<br>
+       Categoría: {{ ticket.category.name }}<br>
+       Entrada: {{ ticket.entry_time|date:"d/m/Y H:i" }}<br>
+       Salida: {{ ticket.exit_time|date:"d/m/Y H:i" }}<br>
+       Tiempo: {{ ticket.get_duration }} horas<br>
+       Total a Pagar: ${{ ticket.amount_paid|floatformat:2 }}<br>
+       Pagó con: ${{ amount_received|floatformat:2 }}<br>
+       Vuelto: ${{ change|floatformat:2 }}
+   </div>
+
+   {% if ticket.category.name|upper == 'MOTOS' and ticket.cascos %}
+   <div class="cascos-info">
+       <strong>CASCOS ENTREGADOS:</strong> {{ ticket.cascos }}
+       {% if ticket.cascos > 0 %}
+       <br>
+       <small style="font-size: 8px;">
+           * Los cascos serán devueltos únicamente contra presentación de este ticket
+           <br>
+           * No nos hacemos responsables por cascos no reclamados después de 24 horas
+       </small>
+       {% endif %}
+   </div>
+   {% endif %}
+
+   <div class="barcode">
+       <img src="{{ ticket.barcode.url }}" alt="Código de Barras">
+   </div>
+   
+   <div style="text-align: center; border-top: 1px dashed black; padding-top: 5px; font-size: 10px;">
+       Gracias por su visita
+   </div>
+
+   <script>
+       window.onload = function() {
+           window.print();
+       }
+   </script>
+</body>
+</html>

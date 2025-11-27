@@ -1,0 +1,198 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Crear Nuevo Parqueadero</h2>
+        <p class="text-gray-600 mt-1">Complete los datos del nuevo parqueadero</p>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.empresa.label }}</label>
+                {{ form.empresa }}
+                {% if form.empresa.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.empresa.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.nit.label }}</label>
+                {{ form.nit }}
+                {% if form.nit.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.nit.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+                {% if form.telefono.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.telefono.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.direccion.label }}</label>
+                {{ form.direccion }}
+                {% if form.direccion.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.direccion.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                {% endif %}
+                <p class="text-sm text-gray-500 mt-1">Este correo será usado para iniciar sesión</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.password.label }}</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.password.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.password_confirm.label }}</label>
+                {{ form.password_confirm }}
+                {% if form.password_confirm.errors %}
+                <p class="text-red-600 text-sm mt-1">{{ form.password_confirm.errors.0 }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sección de Suscripción -->
+        <div class="border-t pt-6 mt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fas fa-calendar-alt text-primary mr-2"></i>
+                Configuración de Suscripción
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.subscription_plan.label }}</label>
+                    <select name="subscription_plan" id="id_subscription_plan" class="form-input" required onchange="updatePlanInfo(this)">
+                        <option value="">Seleccione un plan...</option>
+                        {% for plan in form.subscription_plan.field.queryset %}
+                        <option value="{{ plan.id }}" 
+                                data-name="{{ plan.name }}"
+                                data-price="{{ plan.price }}"
+                                data-duration="{{ plan.duration_days }}"
+                                data-type="{{ plan.get_plan_type_display }}">
+                            {{ plan.name }} - ${{ plan.price|floatformat:0 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.subscription_plan.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.subscription_plan.errors.0 }}</p>
+                    {% endif %}
+                    
+                    <!-- Información del plan seleccionado -->
+                    <div id="plan-info" class="mt-3 p-3 bg-blue-50 border-l-4 border-blue-500 rounded hidden">
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-blue-600 font-semibold">Precio:</span>
+                                <span id="plan-price" class="text-blue-900 font-bold"></span>
+                            </div>
+                            <div>
+                                <span class="text-blue-600 font-semibold">Duración:</span>
+                                <span id="plan-duration" class="text-blue-900 font-bold"></span>
+                            </div>
+                            <div>
+                                <span class="text-blue-600 font-semibold">Tipo:</span>
+                                <span id="plan-type" class="text-blue-900 font-bold"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.subscription_start.label }}</label>
+                    {{ form.subscription_start }}
+                    {% if form.subscription_start.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.subscription_start.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-500 mt-1">{{ form.subscription_start.help_text }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex space-x-4 pt-4">
+            <button type="submit" class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                <i class="fas fa-save mr-2"></i>
+                Crear Parqueadero
+            </button>
+            <a href="{% url 'superadmin_dashboard' %}" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center">
+                <i class="fas fa-times mr-2"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function updatePlanInfo(select) {
+    const infoDiv = document.getElementById('plan-info');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (select.value && selectedOption) {
+        const price = selectedOption.getAttribute('data-price');
+        const duration = selectedOption.getAttribute('data-duration');
+        const type = selectedOption.getAttribute('data-type');
+        
+        if (price && duration && type) {
+            document.getElementById('plan-price').textContent = '$' + parseFloat(price).toLocaleString('es-CO');
+            document.getElementById('plan-duration').textContent = duration + ' días';
+            document.getElementById('plan-type').textContent = type;
+            infoDiv.classList.remove('hidden');
+        } else {
+            infoDiv.classList.add('hidden');
+        }
+    } else {
+        infoDiv.classList.add('hidden');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('id_subscription_plan');
+    if (select && select.value) {
+        updatePlanInfo(select);
+    }
+});
+</script>
+
+<style>
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+    }
+    input:focus,
+    select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+</style>
+{% endblock %}

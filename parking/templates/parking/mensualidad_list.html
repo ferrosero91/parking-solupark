@@ -1,0 +1,142 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                Mensualidades
+            </h1>
+            <p class="text-gray-600 flex items-center">
+                <i class="fas fa-calendar-check mr-2 text-primary"></i>
+                Control de pagos mensuales
+            </p>
+        </div>
+        <a href="{% url 'mensualidad-create' %}" 
+           class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <i class="fas fa-plus-circle mr-2 text-lg"></i>
+            Nueva Mensualidad
+        </a>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-success-light text-success-color{% elif message.tags == 'error' %}bg-danger-light text-danger-color{% else %}bg-primary-light text-info-color{% endif %} animate-fade-in">
+            <div class="flex items-center">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} text-xl mr-3"></i>
+                <p class="font-medium">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Lista de Mensualidades -->
+    <div class="glass-effect rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 border-b-2 border-gray-200">
+                    <tr>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-user text-primary mr-2"></i>Cliente
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                            <i class="fas fa-calendar text-success mr-2"></i>Período
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-dollar-sign text-warning mr-2"></i>Monto
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-info-circle text-primary mr-2"></i>Estado
+                        </th>
+                        <th class="px-3 md:px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <i class="fas fa-cog text-primary mr-2"></i>Acciones
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% for mensualidad in mensualidades %}
+                    <tr class="table-row">
+                        <td class="px-3 md:px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-2 sm:p-3 rounded-lg sm:rounded-xl mr-2 sm:mr-3">
+                                    <i class="fas fa-user text-primary text-sm sm:text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-xs sm:text-sm font-bold text-gray-800">{{ mensualidad.cliente.nombre }}</div>
+                                    <div class="text-xs text-gray-500">{{ mensualidad.cliente.placa }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 md:px-6 py-4 hidden md:table-cell">
+                            <div class="text-sm text-gray-700">{{ mensualidad.fecha_inicio|date:"d/m/Y" }}</div>
+                            <div class="text-xs text-gray-500">hasta {{ mensualidad.fecha_vencimiento|date:"d/m/Y" }}</div>
+                            {% if mensualidad.esta_vigente %}
+                            <div class="text-xs text-success-color mt-1">
+                                <i class="fas fa-clock mr-1"></i>{{ mensualidad.dias_restantes }} días restantes
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            <span class="text-lg font-bold text-gray-800">${{ mensualidad.monto|floatformat:0|intcomma }}</span>
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            {% if mensualidad.estado == 'PAGADO' %}
+                                <span class="px-3 py-1.5 bg-success-light text-success-color rounded-lg text-xs font-bold inline-flex items-center">
+                                    <i class="fas fa-check-circle mr-1"></i>Pagado
+                                </span>
+                            {% elif mensualidad.estado == 'PENDIENTE' %}
+                                <span class="px-3 py-1.5 bg-warning-light text-warning-color rounded-lg text-xs font-bold inline-flex items-center">
+                                    <i class="fas fa-clock mr-1"></i>Pendiente
+                                </span>
+                            {% elif mensualidad.estado == 'VENCIDO' %}
+                                <span class="px-3 py-1.5 bg-danger-light text-danger-color rounded-lg text-xs font-bold inline-flex items-center">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Vencido
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold">
+                                    {{ mensualidad.estado }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 md:px-6 py-4">
+                            <div class="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+                                {% if mensualidad.estado == 'PENDIENTE' or mensualidad.estado == 'VENCIDO' %}
+                                <a href="{% url 'mensualidad-pagar' pk=mensualidad.id %}" 
+                                   class="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg gradient-success text-white text-xs font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-dollar-sign mr-1 text-xs"></i>Pagar
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'mensualidad-detail' pk=mensualidad.id %}" 
+                                   class="inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg gradient-primary text-white text-xs font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-eye mr-1 text-xs"></i>Ver
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-gray-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-calendar-check text-gray-400 text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium text-lg mb-2">No hay mensualidades registradas</p>
+                                <p class="text-gray-500 text-sm mb-4">Crea la primera mensualidad para comenzar</p>
+                                <a href="{% url 'mensualidad-create' %}" 
+                                   class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                                    <i class="fas fa-plus-circle mr-2"></i>Crear Primera Mensualidad
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

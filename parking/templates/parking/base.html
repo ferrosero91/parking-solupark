@@ -1,0 +1,558 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoluPark - Sistema de Estacionamiento Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/solupark.css' %}">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        }
+        
+        .gradient-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .gradient-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .gradient-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .nav-item:hover::before,
+        .nav-item.active::before {
+            transform: scaleY(1);
+        }
+        
+        .nav-item:hover {
+            background: rgba(14, 165, 233, 0.1);
+            padding-left: 1.25rem;
+        }
+        
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .logo-text {
+            background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Dark Mode Styles */
+        .dark {
+            color-scheme: dark;
+        }
+        
+        .dark body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        .dark .glass-effect {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: rgba(148, 163, 184, 0.1);
+        }
+        
+        .dark .stat-card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .dark .table-row:hover {
+            background: linear-gradient(90deg, rgba(14, 165, 233, 0.1) 0%, transparent 100%);
+        }
+        
+        .dark .nav-item:hover {
+            background: rgba(14, 165, 233, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3);
+        }
+        
+        .table-row {
+            transition: all 0.2s ease;
+        }
+        
+        .table-row:hover {
+            background: linear-gradient(90deg, rgba(14, 165, 233, 0.05) 0%, transparent 100%);
+            transform: translateX(4px);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    <div class="min-h-screen flex flex-col">
+        <!-- Sidebar y contenido principal -->
+        <div class="flex-1 flex">
+            <!-- Sidebar -->
+            {% if user.is_authenticated %}
+            <div id="sidebar" class="sidebar-gradient text-white fixed inset-y-0 left-0 transform transition-all duration-300 ease-in-out z-30 md:relative md:translate-x-0 shadow-2xl flex flex-col" style="width: 280px;">
+                <!-- Toggle button -->
+                <button id="toggle-sidebar" class="absolute -right-4 top-12 bg-cyan-500 text-white p-3.5 rounded-full shadow-2xl hover:bg-cyan-400 hover:scale-110 focus:outline-none transition-all duration-300 border-4 border-white ring-2 ring-cyan-600">
+                    <i id="toggle-icon" class="fas fa-chevron-left text-lg font-bold"></i>
+                </button>
+
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 px-7 py-6 sidebar-full flex-shrink-0">
+                    <div class="bg-gradient-to-br from-primary-400 to-accent-500 p-3 rounded-xl shadow-lg">
+                        <i class="fas fa-parking text-2xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-2xl font-black whitespace-nowrap logo-text">SoluPark</span>
+                        <p class="text-xs text-slate-400 sidebar-full">Sistema Inteligente</p>
+                    </div>
+                </div>
+
+                <!-- Scrollable menu area -->
+                <nav class="flex flex-col space-y-1.5 px-3 overflow-y-auto flex-1" style="scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent;">
+                    {% if user.is_superuser %}
+                        <!-- Menú para Superadministrador -->
+                        <div class="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider sidebar-text">
+                            <i class="fas fa-crown mr-2"></i>Superadministrador
+                        </div>
+                        <a href="{% url 'superadmin_dashboard' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-primary-500/10 p-2 rounded-lg group-hover:bg-primary-500/20 transition-colors">
+                                <i class="fas fa-building text-primary-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Parqueaderos</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-primary-400 transition-colors"></i>
+                            </span>
+                        </a>
+                        <a href="{% url 'create_parking_lot' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-accent-500/10 p-2 rounded-lg group-hover:bg-accent-500/20 transition-colors">
+                                <i class="fas fa-plus text-accent-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Nuevo Parqueadero</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-accent-400 transition-colors"></i>
+                            </span>
+                        </a>
+                    {% else %}
+                        <!-- Menú para usuarios normales (clientes) -->
+                        {% load user_roles %}
+                        
+                        <div class="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider sidebar-text">
+                            <i class="fas fa-grip-horizontal mr-2"></i>Menú Principal
+                        </div>
+                        
+                        <a href="{% url 'dashboard' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-blue-500/10 p-2 rounded-lg group-hover:bg-blue-500/20 transition-colors">
+                                <i class="fas fa-chart-line text-blue-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Dashboard</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-blue-400 transition-colors"></i>
+                            </span>
+                        </a>
+
+                        <a href="{% url 'vehicle-entry' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-green-500/10 p-2 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                                <i class="fas fa-car text-green-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Nuevo Ingreso</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-green-400 transition-colors"></i>
+                            </span>
+                        </a>
+
+                        {% if user|is_admin or user|is_cajero %}
+                        <a href="{% url 'vehicle-exit' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-orange-500/10 p-2 rounded-lg group-hover:bg-orange-500/20 transition-colors">
+                                <i class="fas fa-sign-out-alt text-orange-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Salida</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-orange-400 transition-colors"></i>
+                            </span>
+                        </a>
+                        {% endif %}
+
+                        <!-- Clientes y Mensualidades -->
+                        <a href="{% url 'cliente-list' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-purple-500/10 p-2 rounded-lg group-hover:bg-purple-500/20 transition-colors">
+                                <i class="fas fa-users text-purple-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Clientes</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-purple-400 transition-colors"></i>
+                            </span>
+                        </a>
+
+                        <a href="{% url 'mensualidad-list' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-cyan-500/10 p-2 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
+                                <i class="fas fa-calendar-check text-cyan-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Mensualidades</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-cyan-400 transition-colors"></i>
+                            </span>
+                        </a>
+
+                        {% if user|is_admin %}
+                        <!-- Menú desplegable de Configuración -->
+                        <div class="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-6 sidebar-text">
+                            <i class="fas fa-cog mr-2"></i>Administración
+                        </div>
+
+                        <div class="mx-2">
+                            <button type="button" onclick="toggleSubmenu('config-menu')" class="nav-item w-full py-3.5 px-4 rounded-xl flex items-center group relative">
+                                <div class="bg-indigo-500/10 p-2 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
+                                    <i class="fas fa-cog text-indigo-400"></i>
+                                </div>
+                                <span class="ml-3 sidebar-full font-medium">Configuración</span>
+                                <span class="ml-auto sidebar-full">
+                                    <i id="config-menu-icon" class="fas fa-chevron-down text-xs text-slate-500 group-hover:text-indigo-400 transition-all"></i>
+                                </span>
+                            </button>
+                            
+                            <!-- Submenú -->
+                            <div id="config-menu" class="ml-4 mt-1 space-y-1 hidden">
+                                <a href="{% url 'company_profile' %}" class="nav-item py-2.5 px-4 rounded-lg flex items-center group relative text-sm">
+                                    <i class="fas fa-building text-purple-400 text-sm mr-3"></i>
+                                    <span class="sidebar-full font-medium">Mi Empresa</span>
+                                </a>
+
+                                <a href="{% url 'category-list' %}" class="nav-item py-2.5 px-4 rounded-lg flex items-center group relative text-sm">
+                                    <i class="fas fa-tags text-pink-400 text-sm mr-3"></i>
+                                    <span class="sidebar-full font-medium">Categorías</span>
+                                </a>
+
+                                <a href="{% url 'payment-method-list' %}" class="nav-item py-2.5 px-4 rounded-lg flex items-center group relative text-sm">
+                                    <i class="fas fa-wallet text-teal-400 text-sm mr-3"></i>
+                                    <span class="sidebar-full font-medium">Medios de Pago</span>
+                                </a>
+
+                                <a href="{% url 'user-list' %}" class="nav-item py-2.5 px-4 rounded-lg flex items-center group relative text-sm">
+                                    <i class="fas fa-users-cog text-purple-400 text-sm mr-3"></i>
+                                    <span class="sidebar-full font-medium">Usuarios</span>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if user|can_access_reports %}
+                        <a href="{% url 'reports' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-indigo-500/10 p-2 rounded-lg group-hover:bg-indigo-500/20 transition-colors">
+                                <i class="fas fa-chart-bar text-indigo-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Reportes</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-indigo-400 transition-colors"></i>
+                            </span>
+                        </a>
+                        {% endif %}
+
+                        {% if user|can_access_cash_register %}
+                        <a href="{% url 'cash_register' %}" class="nav-item py-3.5 px-4 rounded-xl mx-2 flex items-center group relative">
+                            <div class="bg-emerald-500/10 p-2 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
+                                <i class="fas fa-cash-register text-emerald-400"></i>
+                            </div>
+                            <span class="ml-3 sidebar-full font-medium">Cuadre de Caja</span>
+                            <span class="ml-auto sidebar-full">
+                                <i class="fas fa-chevron-right text-xs text-slate-500 group-hover:text-emerald-400 transition-colors"></i>
+                            </span>
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                </nav>
+
+                <!-- Theme Toggle & User Profile -->
+                <div class="px-4 py-3 border-t border-slate-700/50 flex-shrink-0 bg-slate-900/50">
+                    <!-- Theme Toggle -->
+                    <div class="sidebar-full mb-2">
+                        <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-2.5 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition-colors">
+                            <span class="text-xs font-medium text-slate-300">Tema</span>
+                            <div class="flex items-center">
+                                <i class="fas fa-sun text-yellow-400 theme-icon-light hidden text-sm"></i>
+                                <i class="fas fa-moon text-blue-400 theme-icon-dark text-sm"></i>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <!-- User Profile -->
+                    <div class="sidebar-full mb-2">
+                        <div class="flex items-center space-x-2 p-2.5 bg-slate-800/50 rounded-lg">
+                            <div class="bg-gradient-to-br from-primary-400 to-accent-500 p-2 rounded-lg flex-shrink-0">
+                                <i class="fas fa-user text-white text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-white truncate">{{ user.first_name|default:user.username }}</p>
+                                <p class="text-xs text-slate-400 truncate">{{ user.email }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Logout Button -->
+                    <form action="{% url 'logout' %}" method="post" class="sidebar-full">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full gradient-danger text-white py-2.5 px-3 rounded-lg transition-all duration-300 flex items-center justify-center hover:shadow-lg font-medium text-sm">
+                            <i class="fas fa-power-off text-sm"></i>
+                            <span class="ml-2">Cerrar Sesión</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Overlay para móvil -->
+            <div id="mobile-overlay" class="mobile-sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col main-content">
+                <!-- Top bar para móviles -->
+                <div class="glass-effect p-3 shadow-lg md:hidden flex justify-between items-center sticky top-0 z-30">
+                    <button onclick="toggleMobileSidebar()" class="mobile-menu-button p-2 hover:bg-gray-100 rounded-lg focus:outline-none transition-colors">
+                        <i class="fas fa-bars text-gray-700 text-lg"></i>
+                    </button>
+                    <span class="font-bold logo-text text-lg">SoluPark</span>
+                    <div class="w-8"></div> <!-- Spacer para centrar el logo -->
+                </div>
+
+                <!-- Content -->
+                <main class="flex-grow p-2 sm:p-4 md:p-6 overflow-auto pb-16">
+                    <div class="container mx-auto animate-fade-in" style="max-width: 1400px;">
+                        {% block content %}
+                        {% endblock %}
+                    </div>
+                </main>
+
+                <!-- Footer -->
+                <footer class="glass-effect border-t border-slate-200 py-3 px-3 sm:py-4 sm:px-6 mt-auto">
+                    <div class="container mx-auto flex flex-col md:flex-row justify-between items-center text-xs sm:text-sm gap-2">
+                        <div class="text-center md:text-left">
+                            <p class="text-slate-600">© 2025 <span class="font-semibold text-primary-600">SoluPark</span> - Sistema Inteligente</p>
+                        </div>
+                        <div class="flex items-center gap-2 sm:gap-4">
+                            <span class="text-slate-500 text-xs sm:text-sm">Soporte:</span>
+                            <a href="https://wa.me/573117098269" target="_blank" 
+                               class="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 text-xs sm:text-sm">
+                                <i class="fab fa-whatsapp text-sm sm:text-lg"></i>
+                                <span class="font-medium">+57 311 709 8269</span>
+                            </a>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar Toggle Desktop
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const sidebarFullElements = document.querySelectorAll('.sidebar-full');
+        const sidebarTextElements = document.querySelectorAll('.sidebar-text');
+        let isExpanded = true;
+
+        toggleBtn?.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            if (isExpanded) {
+                sidebar.style.width = '280px';
+                toggleIcon.classList.remove('fa-chevron-right');
+                toggleIcon.classList.add('fa-chevron-left');
+                sidebarFullElements.forEach(el => el.style.display = 'flex');
+                sidebarTextElements.forEach(el => el.style.display = 'block');
+            } else {
+                sidebar.style.width = '70px';
+                toggleIcon.classList.remove('fa-chevron-left');
+                toggleIcon.classList.add('fa-chevron-right');
+                sidebarFullElements.forEach(el => el.style.display = 'none');
+                sidebarTextElements.forEach(el => el.style.display = 'none');
+            }
+        });
+
+        // Mobile Sidebar Toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+            
+            // Prevenir scroll del body cuando el menú está abierto
+            if (sidebar.classList.contains('mobile-open')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Cerrar sidebar al hacer click en un enlace (móvil)
+        document.querySelectorAll('#sidebar a').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    toggleMobileSidebar();
+                }
+            });
+        });
+
+        // Toggle Submenu
+        function toggleSubmenu(menuId) {
+            const submenu = document.getElementById(menuId);
+            const icon = document.getElementById(menuId + '-icon');
+            
+            if (submenu.classList.contains('hidden')) {
+                submenu.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                submenu.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.classList.remove(currentTheme);
+            html.classList.add(newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update icons
+            document.querySelectorAll('.theme-icon-light').forEach(el => {
+                el.classList.toggle('hidden', newTheme === 'light');
+            });
+            document.querySelectorAll('.theme-icon-dark').forEach(el => {
+                el.classList.toggle('hidden', newTheme === 'dark');
+            });
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.classList.add(savedTheme);
+            
+            if (savedTheme === 'dark') {
+                document.querySelectorAll('.theme-icon-light').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('.theme-icon-dark').forEach(el => el.classList.add('hidden'));
+            }
+        });
+
+        // Cerrar sidebar al redimensionar ventana
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('mobile-overlay');
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
+</body>
+</html>

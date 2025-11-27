@@ -1,0 +1,270 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="space-y-4 md:space-y-6">
+    <!-- Header con título y fecha -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <div>
+            <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-1">
+                Dashboard
+            </h1>
+            <p class="text-sm text-gray-600 flex items-center">
+                <i class="fas fa-calendar-alt mr-2 text-primary"></i>
+                {{ current_time|date:"l, d F Y" }}
+            </p>
+        </div>
+        <button onclick="reloadDashboard()" class="inline-flex items-center px-4 py-2 gradient-primary text-white font-medium rounded-lg shadow hover:shadow-lg transition-all text-sm">
+            <i class="fas fa-sync-alt mr-2"></i>
+            Actualizar
+        </button>
+    </div>
+
+    <!-- Alerta de Suscripción -->
+    {% if subscription_alert %}
+    <div class="subscription-alert {% if subscription_alert.type == 'expired' %}bg-red-50 border-l-4 border-red-500{% elif subscription_alert.type == 'danger' %}bg-orange-50 border-l-4 border-orange-500{% else %}bg-yellow-50 border-l-4 border-yellow-500{% endif %} p-4 rounded-lg shadow-md">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                {% if subscription_alert.type == 'expired' %}
+                <i class="fas fa-exclamation-circle text-red-500 text-2xl"></i>
+                {% elif subscription_alert.type == 'danger' %}
+                <i class="fas fa-exclamation-triangle text-orange-500 text-2xl"></i>
+                {% else %}
+                <i class="fas fa-clock text-yellow-500 text-2xl"></i>
+                {% endif %}
+            </div>
+            <div class="ml-3 flex-1">
+                <h3 class="text-sm font-bold {% if subscription_alert.type == 'expired' %}text-red-800{% elif subscription_alert.type == 'danger' %}text-orange-800{% else %}text-yellow-800{% endif %}">
+                    {% if subscription_alert.type == 'expired' %}
+                    ¡Tu suscripción ha vencido!
+                    {% elif subscription_alert.days == 0 %}
+                    ¡Tu suscripción vence hoy!
+                    {% elif subscription_alert.days == 1 %}
+                    ¡Tu suscripción vence mañana!
+                    {% else %}
+                    ¡Tu suscripción está por vencer!
+                    {% endif %}
+                </h3>
+                <div class="mt-2 text-sm {% if subscription_alert.type == 'expired' %}text-red-700{% elif subscription_alert.type == 'danger' %}text-orange-700{% else %}text-yellow-700{% endif %}">
+                    <p>
+                        {% if subscription_alert.type == 'expired' %}
+                        Tu suscripción venció el {{ subscription_alert.end_date|date:"d/m/Y" }}. Por favor, contacta al administrador para renovar tu plan.
+                        {% else %}
+                        Te quedan <strong>{{ subscription_alert.days }} día{{ subscription_alert.days|pluralize }}</strong> hasta el {{ subscription_alert.end_date|date:"d/m/Y" }}. 
+                        Contacta al administrador para renovar tu suscripción.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tarjetas KPI -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <!-- Vehículos Totales -->
+        <div class="stat-card stat-card-primary glass-effect rounded-lg p-3 sm:p-4 card-hover">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500 mb-1">Vehículos Totales</p>
+                    <p class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">{{ stats.daily.total_vehicles|default:0 }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Últimos 7 días</p>
+                </div>
+                <div class="bg-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                    <i class="fas fa-car text-primary text-lg sm:text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingresos Totales -->
+        <div class="stat-card stat-card-success glass-effect rounded-lg p-3 sm:p-4 card-hover">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500 mb-1">Ingresos Totales</p>
+                    <p class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">${{ stats.daily.total_revenue|default:0|floatformat:0|intcomma }}</p>
+                    <div class="flex items-center gap-2 mt-2 text-xs">
+                        <span class="text-gray-500">
+                            <i class="fas fa-receipt text-blue-500 mr-1"></i>
+                            Tickets: ${{ stats.daily.total_tickets_revenue|default:0|floatformat:0|intcomma }}
+                        </span>
+                        {% if stats.daily.total_mensualidades_count > 0 %}
+                        <span class="text-gray-500">
+                            <i class="fas fa-calendar-check text-cyan-500 mr-1"></i>
+                            Mensualidades: ${{ stats.daily.total_mensualidades_revenue|default:0|floatformat:0|intcomma }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="bg-green-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                    <i class="fas fa-dollar-sign text-success text-lg sm:text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehículos Activos -->
+        <div class="stat-card stat-card-warning glass-effect rounded-lg p-3 sm:p-4 card-hover">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500 mb-1">Vehículos Activos</p>
+                    <p class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">{{ stats.active_vehicles }}</p>
+                    <p class="text-xs text-gray-500 mt-1">En tiempo real</p>
+                </div>
+                <div class="bg-orange-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                    <i class="fas fa-parking text-warning text-lg sm:text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Vehículos Activos -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="p-3 sm:p-4 md:p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-gray-900">Vehículos Actualmente en el Estacionamiento</h2>
+                    <p class="text-xs sm:text-sm text-gray-500">Listado en tiempo real</p>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoría</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Entrada</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarifa</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for vehicle in stats.active_vehicles_list %}
+                    <tr class="table-row">
+                        <td class="px-3 md:px-6 py-3">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-2 rounded-lg mr-2">
+                                    <i class="fas fa-car text-primary text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-gray-800">{{ vehicle.placa }}</div>
+                                    <div class="text-xs text-gray-500 sm:hidden">{{ vehicle.category.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 md:px-6 py-3 hidden sm:table-cell">
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-lg bg-blue-100 text-primary">
+                                {{ vehicle.category.name }}
+                            </span>
+                        </td>
+                        <td class="px-3 md:px-6 py-3 hidden md:table-cell">
+                            <div class="text-sm text-gray-700">{{ vehicle.entry_time|date:"d/m/Y" }}</div>
+                            <div class="text-xs text-gray-500">{{ vehicle.entry_time|date:"H:i" }}</div>
+                        </td>
+                        <td class="px-3 md:px-6 py-3">
+                            {% with time_diff=vehicle.get_current_duration %}
+                            <span class="text-xs md:text-sm font-bold text-gray-700">
+                                {{ time_diff.hours }}h {{ time_diff.minutes }}m
+                            </span>
+                            {% endwith %}
+                        </td>
+                        <td class="px-3 md:px-6 py-3">
+                            <span class="text-sm md:text-lg font-bold text-success">${{ vehicle.calculate_current_fee|floatformat:0|intcomma }}</span>
+                        </td>
+                        <td class="px-3 md:px-6 py-3">
+                            <div class="flex flex-col sm:flex-row gap-1.5">
+                                <button onclick="handleExit('{{ vehicle.placa }}')" class="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg text-white gradient-danger shadow hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-sign-out-alt mr-1 text-xs"></i>
+                                    Salida
+                                </button>
+                                <button onclick="handlePrint('{{ vehicle.id }}')" class="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg text-white gradient-primary shadow hover:shadow-lg transition-all whitespace-nowrap">
+                                    <i class="fas fa-print mr-1 text-xs"></i>
+                                    <span class="hidden sm:inline">Imprimir</span><span class="sm:hidden">Print</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-slate-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-parking text-slate-400 text-5xl"></i>
+                                </div>
+                                <p class="text-slate-600 font-medium text-lg">No hay vehículos activos</p>
+                                <p class="text-slate-400 text-sm mt-1">El estacionamiento está vacío en este momento</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
+        <!-- Estadísticas por Categoría -->
+        <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
+            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                <i class="fas fa-chart-pie mr-2 text-blue-500 text-sm sm:text-base"></i>
+                Estadísticas por Categoría
+            </h2>
+            <div class="space-y-2 sm:space-y-3 md:space-y-4">
+                {% for stat in stats.category %}
+                <div class="flex items-center justify-between p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <span class="font-medium text-gray-700 text-xs sm:text-sm">{{ stat.category__name }}</span>
+                    <div class="text-right">
+                        <span class="block text-xs text-gray-500">Veh: {{ stat.count }}</span>
+                        <span class="block text-xs sm:text-sm font-medium text-green-600">${{ stat.revenue|default:0|floatformat:0|intcomma }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-6 text-gray-500">
+                    <i class="fas fa-chart-pie text-gray-400 text-3xl sm:text-4xl mb-4"></i>
+                    <p class="text-xs sm:text-sm">No hay datos disponibles</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Estadísticas Diarias -->
+        <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
+            <h2 class="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                <i class="fas fa-calendar-day mr-2 text-green-500 text-sm sm:text-base"></i>
+                Estadísticas Diarias
+            </h2>
+            <div class="space-y-2 sm:space-y-3 md:space-y-4">
+                {% for stat in daily_stats %}
+                <div class="flex items-center justify-between p-2.5 sm:p-3 md:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <span class="font-medium text-gray-700 text-xs sm:text-sm">{{ stat.date }}</span>
+                    <span class="text-green-600 font-medium text-xs sm:text-sm">${{ stat.revenue|floatformat:0|intcomma }}</span>
+                </div>
+                {% empty %}
+                <div class="text-center py-6 text-gray-500">
+                    <i class="fas fa-calendar-day text-gray-400 text-3xl sm:text-4xl mb-4"></i>
+                    <p class="text-xs sm:text-sm">No hay estadísticas disponibles</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleExit(placa) {
+    window.location.href = `{% url 'vehicle-exit' %}?placa=${placa}`;
+}
+
+function handlePrint(ticketId) {
+    window.location.href = `{% url 'print-ticket' %}?ticket_id=${ticketId}`;
+}
+
+function reloadDashboard() {
+    location.reload();
+}
+
+// Actualizar automáticamente cada 5 minutos
+setInterval(reloadDashboard, 300000);
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6 gradient-primary text-white">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-sync-alt mr-3"></i>
+                Renovar Suscripción
+            </h1>
+        </div>
+
+        <div class="p-8">
+            <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                    <div>
+                        <h3 class="font-semibold text-blue-900 mb-2">Información del Parqueadero</h3>
+                        <p class="text-blue-800"><strong>Empresa:</strong> {{ parking_lot.empresa }}</p>
+                        <p class="text-blue-800"><strong>Plan:</strong> {{ parking_lot.get_plan_type_display }}</p>
+                        <p class="text-blue-800"><strong>Precio:</strong> ${{ parking_lot.monthly_price|floatformat:0 }}/mes</p>
+                        {% if parking_lot.subscription_end %}
+                        <p class="text-blue-800"><strong>Vencimiento actual:</strong> {{ parking_lot.subscription_end|date:"d/m/Y" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 mt-1 mr-3"></i>
+                    <div>
+                        <h3 class="font-semibold text-yellow-900 mb-2">¿Estás seguro?</h3>
+                        <p class="text-yellow-800">
+                            {% if parking_lot.subscription_end and parking_lot.subscription_end > parking_lot.subscription_start %}
+                                La suscripción se extenderá por 
+                                {% if parking_lot.plan_type == 'MENSUAL' %}30 días{% else %}365 días{% endif %}
+                                desde la fecha de vencimiento actual.
+                            {% else %}
+                                La suscripción comenzará hoy y durará 
+                                {% if parking_lot.plan_type == 'MENSUAL' %}30 días{% else %}365 días{% endif %}.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 gradient-success text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105">
+                        <i class="fas fa-check mr-2"></i>
+                        Confirmar Renovación
+                    </button>
+                    <a href="{% url 'superadmin_dashboard' %}" class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors text-center">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

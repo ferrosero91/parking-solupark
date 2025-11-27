@@ -1,0 +1,180 @@
+{% extends 'parking/base.html' %}
+{% load l10n %}
+
+{% block content %}
+<div class="w-full max-w-3xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-gray-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    Nueva Mensualidad
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    Registre una nueva mensualidad
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas fa-calendar-plus text-primary text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-4 sm:space-y-6">
+            {% csrf_token %}
+            
+            <!-- Cliente -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-user text-primary mr-2"></i>
+                    Cliente <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <select name="cliente" required
+                            class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                        <option value="">Seleccione un cliente</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}">{{ cliente.nombre }} - {{ cliente.placa }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-primary text-lg"></i>
+                    </div>
+                </div>
+                {% if not clientes %}
+                <p class="text-xs text-warning-color mt-2">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    No hay clientes registrados. <a href="{% url 'cliente-create' %}" class="underline">Crear cliente</a>
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Categoría -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-tags text-success mr-2"></i>
+                    Categoría Mensual <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <select name="category" id="category" required
+                            class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                        <option value="">Seleccione una categoría</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" data-monto="{{ category.monthly_rate|unlocalize }}">
+                            {{ category.name }} - ${{ category.monthly_rate|floatformat:0 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-tags text-success text-lg"></i>
+                    </div>
+                </div>
+                {% if not categories %}
+                <p class="text-xs text-warning-color mt-2">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    No hay categorías mensuales. <a href="{% url 'category-create' %}" class="underline">Crear categoría</a>
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Fecha de Inicio -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-calendar-alt text-primary mr-2"></i>
+                    Fecha de Inicio <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <input type="date" name="fecha_inicio" id="fecha_inicio" required
+                           class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-calendar-alt text-primary text-lg"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">La mensualidad vencerá 30 días después de esta fecha</p>
+            </div>
+
+            <!-- Estado de Pago -->
+            <div class="p-6 bg-warning-light rounded-xl border-2 border-orange-200">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-info-circle text-warning mr-2"></i>
+                    Estado de Pago
+                </label>
+                <div class="space-y-3">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="estado" value="PENDIENTE" checked class="w-5 h-5 text-warning border-2 border-gray-300">
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            <i class="fas fa-clock text-warning mr-2"></i>
+                            Pendiente de Pago (Cuenta por Cobrar)
+                        </span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="radio" name="estado" value="PAGADO" class="w-5 h-5 text-success border-2 border-gray-300">
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            <i class="fas fa-check-circle text-success mr-2"></i>
+                            Pagado
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Monto (calculado automáticamente) -->
+            <div class="p-6 bg-primary-light rounded-xl border-2 border-blue-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-bold text-gray-700">
+                        <i class="fas fa-dollar-sign text-primary mr-2"></i>
+                        Monto Total:
+                    </span>
+                    <span id="monto-display" class="text-3xl font-bold text-primary">$0</span>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                <button type="submit" 
+                        class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-save mr-2 text-lg sm:text-xl"></i>
+                    Crear Mensualidad
+                </button>
+                <a href="{% url 'mensualidad-list' %}"
+                   class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    const montoDisplay = document.getElementById('monto-display');
+    const fechaInicioInput = document.getElementById('fecha_inicio');
+    
+    // Establecer fecha de hoy por defecto
+    const today = new Date().toISOString().split('T')[0];
+    fechaInicioInput.value = today;
+    
+    // Actualizar monto cuando cambia la categoría
+    categorySelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const monto = selectedOption.getAttribute('data-monto');
+        if (monto) {
+            // Convertir el monto a número y formatearlo correctamente
+            const montoNumero = parseFloat(monto);
+            montoDisplay.textContent = '$' + montoNumero.toLocaleString('es-CO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        } else {
+            montoDisplay.textContent = '$0';
+        }
+    });
+    
+    // Disparar el evento change si ya hay una categoría seleccionada
+    if (categorySelect.value) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+    <!-- Header con título y selector de fechas -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Cuadre de Caja</h1>
+            <div class="flex items-center mt-2">
+                <p class="text-sm text-gray-600 mr-2">Período:</p>
+                <input type="text" id="date_range" class="text-sm text-gray-600 border rounded-md px-2 py-1" value="{{ start_date|date:'Y-m-d' }} - {{ end_date|date:'Y-m-d' }}">
+            </div>
+            {% if start_date != today %}
+            <p class="text-sm text-red-600 mt-1">Nota: Estás viendo un período diferente al día actual ({{ today|date:"d/m/Y" }}).</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 mb-4 text-sm rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}" role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Formulario para establecer el dinero inicial (base para vueltos) -->
+    {% if not caja.dinero_inicial and not caja.cuadre_realizado %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Abrir Caja - Establecer Base para Vueltos</h2>
+        <form method="post" onsubmit="return validateDineroInicial()">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="dinero_inicial" class="block text-sm font-medium text-gray-700">Dinero Inicial (Base para Vueltos):</label>
+                <div class="relative mt-1 w-1/2">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+                    <input type="text" name="dinero_inicial" id="dinero_inicial" class="pl-8 pr-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00" required>
+                </div>
+                <p id="dinero_inicial_error" class="text-red-600 text-sm mt-1 hidden">Por favor, ingrese un valor numérico válido y no negativo.</p>
+            </div>
+            <button type="submit" name="set_dinero_inicial" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Establecer Dinero Inicial
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Resumen de la caja -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Dinero Inicial -->
+        <div class="bg-blue-500 text-white rounded-xl shadow-lg p-6">
+            <h2 class="text-sm font-medium opacity-80">Dinero Inicial</h2>
+            <p class="text-3xl font-bold mt-2">${{ caja.dinero_inicial|floatformat:2|intcomma }}</p>
+            <p class="text-sm mt-4 opacity-80">Base para vueltos</p>
+        </div>
+        <!-- Ingresos del Día -->
+        <div class="bg-green-500 text-white rounded-xl shadow-lg p-6">
+            <h2 class="text-sm font-medium opacity-80">Ingresos del Día</h2>
+            <p class="text-3xl font-bold mt-2">${{ total_income|floatformat:2|intcomma }}</p>
+            <p class="text-sm mt-4 opacity-80">Total de tickets</p>
+        </div>
+        <!-- Dinero Esperado -->
+        <div class="bg-yellow-500 text-white rounded-xl shadow-lg p-6">
+            <h2 class="text-sm font-medium opacity-80">Dinero Esperado</h2>
+            <p class="text-3xl font-bold mt-2">${{ dinero_esperado|floatformat:2|intcomma }}</p>
+            <p class="text-sm mt-4 opacity-80">Dinero Inicial + Ingresos</p>
+        </div>
+    </div>
+
+    <!-- Formulario para realizar el cuadre de caja -->
+    {% if caja.dinero_inicial and not caja.cuadre_realizado %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Realizar Cuadre de Caja</h2>
+        <form method="post" onsubmit="return validateDineroFinal()">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="dinero_final" class="block text-sm font-medium text-gray-700">Dinero Final (Dinero Real en Caja):</label>
+                <div class="relative mt-1 w-1/2">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+                    <input type="text" name="dinero_final" id="dinero_final" class="pl-8 pr-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00" required>
+                </div>
+                <p id="dinero_final_error" class="text-red-600 text-sm mt-1 hidden">Por favor, ingrese un valor numérico válido y no negativo.</p>
+            </div>
+            <button type="submit" name="realizar_cuadre" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Realizar Cuadre
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Resultado del cuadre (si ya se realizó) -->
+    {% if caja.cuadre_realizado %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Resultado del Cuadre de Caja</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <p class="text-sm text-gray-600">Dinero Final (Real):</p>
+                <p class="text-xl font-bold text-gray-900">${{ caja.dinero_final|floatformat:2|intcomma }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Diferencia:</p>
+                <p class="text-xl font-bold {% if diferencia < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                    {% if diferencia < 0 %}
+                    Faltante: -${{ diferencia_abs|floatformat:2|intcomma }}
+                    {% elif diferencia > 0 %}
+                    Sobrante: +${{ diferencia_abs|floatformat:2|intcomma }}
+                    {% else %}
+                    $0.00 (Cuadre exacto)
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de tickets -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Tickets del Período</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrada</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salida</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto Pagado</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for ticket in tickets %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ ticket.placa }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ticket.category.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ticket.entry_time|date:"d/m/Y H:i" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ticket.exit_time|date:"d/m/Y H:i" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">${{ ticket.amount_paid|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No hay tickets para este período.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Incluir Flatpickr para el selector de fechas -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+// Configurar Flatpickr para el selector de fechas
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('#date_range', {
+        mode: 'range',
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            if (selectedDates.length === 2) {
+                const start_date = selectedDates[0].toISOString().split('T')[0];
+                const end_date = selectedDates[1].toISOString().split('T')[0];
+                window.location.href = `/cash-register/?start_date=${start_date}&end_date=${end_date}`;
+            }
+        }
+    });
+});
+
+// Función para formatear el input con separadores de miles y decimales
+function formatCurrency(input) {
+    let value = input.value.replace(/[^0-9]/g, ''); // Solo números
+    if (value === '') return;
+    value = (parseFloat(value) / 100).toFixed(2); // Convertir a formato con 2 decimales
+    input.value = parseFloat(value).toLocaleString('es-CO', { minimumFractionDigits: 2 }); // Formato con separadores de miles
+}
+
+// Validar el dinero inicial antes de enviar el formulario
+function validateDineroInicial() {
+    const input = document.getElementById('dinero_inicial');
+    const error = document.getElementById('dinero_inicial_error');
+    let value = input.value.replace(/[^0-9]/g, ''); // Solo números
+    if (value === '' || isNaN(value) || parseFloat(value) < 0) {
+        error.classList.remove('hidden');
+        return false;
+    }
+    error.classList.add('hidden');
+    input.value = parseFloat(value) / 100; // Convertir a formato numérico para enviar
+    return true;
+}
+
+// Validar el dinero final antes de enviar el formulario
+function validateDineroFinal() {
+    const input = document.getElementById('dinero_final');
+    const error = document.getElementById('dinero_final_error');
+    let value = input.value.replace(/[^0-9]/g, ''); // Solo números
+    if (value === '' || isNaN(value) || parseFloat(value) < 0) {
+        error.classList.remove('hidden');
+        return false;
+    }
+    error.classList.add('hidden');
+    input.value = parseFloat(value) / 100; // Convertir a formato numérico para enviar
+    return true;
+}
+
+// Aplicar formato al escribir en los inputs
+document.getElementById('dinero_inicial')?.addEventListener('input', function() {
+    formatCurrency(this);
+});
+document.getElementById('dinero_final')?.addEventListener('input', function() {
+    formatCurrency(this);
+});
+</script>
+{% endblock %}

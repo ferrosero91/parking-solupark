@@ -1,0 +1,151 @@
+CONFIGURACIÓN DEL SISTEMA DE PARQUEADERO
+=========================================
+
+CONFIGURACIÓN LOCAL (DESARROLLO)
+---------------------------------
+
+1. Instalar dependencias:
+   pip install -r requirements.txt
+
+2. Configurar variables de entorno:
+   - Copiar .env.example a .env
+   - El archivo .env ya está configurado para desarrollo local con SQLite
+
+3. Ejecutar migraciones:
+   python manage.py migrate
+
+4. Crear superusuario (opcional):
+   python manage.py createsuperuser
+
+5. Inicializar datos (opcional):
+   python manage.py init_payment_methods
+
+6. Ejecutar servidor de desarrollo:
+   python manage.py runserver
+
+7. Acceder a:
+   http://localhost:8000
+
+
+CONFIGURACIÓN PRODUCCIÓN
+-------------------------
+
+1. Generar SECRET_KEY segura:
+   python generate_secret_key.py
+
+2. Configurar variables de entorno:
+   - Copiar .env.production.example a .env
+   - Editar .env con los valores de producción:
+     * DEBUG=False
+     * SECRET_KEY=<clave-generada>
+     * DATABASE_* (configuración PostgreSQL)
+     * ALLOWED_HOSTS=tu-dominio.com
+     * RENDER_EXTERNAL_HOSTNAME (si usas Render)
+
+3. Instalar dependencias:
+   pip install -r requirements.txt
+
+4. Ejecutar migraciones:
+   python manage.py migrate
+
+5. Recolectar archivos estáticos:
+   python manage.py collectstatic --noinput
+
+6. Crear superusuario:
+   python manage.py createsuperuser
+
+7. Inicializar datos:
+   python manage.py init_payment_methods
+
+8. Ejecutar con Gunicorn:
+   gunicorn parking_system.wsgi:application --bind 0.0.0.0:8000
+
+
+VARIABLES DE ENTORNO IMPORTANTES
+---------------------------------
+
+DEBUG:
+  - True: Modo desarrollo (muestra errores detallados)
+  - False: Modo producción (oculta errores)
+
+SECRET_KEY:
+  - Clave secreta para Django
+  - DEBE ser diferente en producción
+  - Generar con: python generate_secret_key.py
+
+DATABASE_ENGINE:
+  - django.db.backends.sqlite3: SQLite (desarrollo)
+  - django.db.backends.postgresql: PostgreSQL (producción)
+
+ALLOWED_HOSTS:
+  - Lista de dominios permitidos (separados por coma)
+  - Ejemplo: localhost,127.0.0.1,midominio.com
+
+REDIS_URL (opcional):
+  - URL de Redis para caché en producción
+  - Ejemplo: redis://usuario:pass@host:6379/0
+
+
+DESPLIEGUE EN RENDER
+---------------------
+
+1. Crear cuenta en Render.com
+
+2. Crear Web Service:
+   - Conectar repositorio de GitHub
+   - Build Command: pip install -r requirements.txt
+   - Start Command: gunicorn parking_system.wsgi:application
+
+3. Configurar variables de entorno en Render:
+   - DEBUG=False
+   - SECRET_KEY=<clave-generada>
+   - DATABASE_ENGINE=django.db.backends.postgresql
+   - DATABASE_NAME=<nombre-db>
+   - DATABASE_USER=<usuario-db>
+   - DATABASE_PASSWORD=<password-db>
+   - DATABASE_HOST=<host-db>
+   - DATABASE_PORT=5432
+   - ALLOWED_HOSTS=<tu-app>.onrender.com
+   - RENDER_EXTERNAL_HOSTNAME=<tu-app>.onrender.com
+
+4. Crear PostgreSQL Database en Render
+
+5. Conectar Web Service con Database
+
+6. Deploy automático
+
+
+SEGURIDAD EN PRODUCCIÓN
+------------------------
+
+✓ DEBUG=False (oculta información sensible)
+✓ SECRET_KEY única y segura
+✓ HTTPS habilitado (SSL/TLS)
+✓ Cookies seguras (SECURE_COOKIE)
+✓ HSTS habilitado
+✓ PostgreSQL con SSL
+✓ Caché con Redis (opcional)
+✓ WhiteNoise para archivos estáticos
+
+
+SOLUCIÓN DE PROBLEMAS
+----------------------
+
+Error: "No module named 'dotenv'"
+  Solución: pip install python-dotenv
+
+Error: "SECRET_KEY not found"
+  Solución: Crear archivo .env con SECRET_KEY
+
+Error: "Database connection failed"
+  Solución: Verificar credenciales en .env
+
+Error: "Static files not found"
+  Solución: python manage.py collectstatic
+
+
+CONTACTO Y SOPORTE
+------------------
+
+Para más información, consultar la documentación de Django:
+https://docs.djangoproject.com/

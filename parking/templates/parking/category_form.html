@@ -1,0 +1,141 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="w-full max-w-3xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-slate-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    Nueva Categoría
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    Configure las tarifas para esta categoría
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas fa-tags text-primary text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-4 sm:space-y-6">
+            {% csrf_token %}
+            
+            <!-- Nombre -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-tag text-primary mr-2"></i>
+                    Nombre de la Categoría <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <input type="text" name="name" required
+                           class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300 uppercase"
+                           placeholder="Ej: MOTOS, CARROS">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-tag text-primary text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarifas en Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Primera Hora -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        <i class="fas fa-dollar-sign text-success mr-2"></i>
+                        Tarifa Primera Hora <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" name="first_hour_rate" step="0.01" min="0" required
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300"
+                               placeholder="0.00">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-dollar-sign text-success text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hora Adicional -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        <i class="fas fa-dollar-sign text-primary mr-2"></i>
+                        Tarifa Hora Adicional <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" name="additional_hour_rate" step="0.01" min="0" required
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300"
+                               placeholder="0.00">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-dollar-sign text-primary text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensualidad -->
+            <div class="p-6 bg-warning-light rounded-xl border-2 border-orange-200">
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" name="is_monthly" id="is_monthly" class="w-5 h-5 text-warning border-2 border-gray-300 rounded focus:ring-2 focus:ring-warning-light">
+                    <label for="is_monthly" class="ml-3 text-sm font-bold text-gray-700">
+                        <i class="fas fa-calendar-alt text-warning mr-2"></i>
+                        ¿Es una categoría mensual?
+                    </label>
+                </div>
+                
+                <div id="monthly-rate-field" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        <i class="fas fa-dollar-sign text-warning mr-2"></i>
+                        Tarifa Mensual <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" name="monthly_rate" step="0.01" min="0"
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300"
+                               placeholder="0.00">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-dollar-sign text-warning text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                <button type="submit" 
+                        class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-save mr-2 text-lg sm:text-xl"></i>
+                    Guardar Categoría
+                </button>
+                <a href="{% url 'category-list' %}"
+                   class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isMonthlyCheckbox = document.getElementById('is_monthly');
+    const monthlyRateField = document.getElementById('monthly-rate-field');
+    const monthlyRateInput = document.querySelector('input[name="monthly_rate"]');
+    
+    isMonthlyCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            monthlyRateField.classList.remove('hidden');
+            monthlyRateInput.setAttribute('required', '');
+        } else {
+            monthlyRateField.classList.add('hidden');
+            monthlyRateInput.removeAttribute('required');
+        }
+    });
+    
+    // Convertir nombre a mayúsculas
+    document.querySelector('input[name="name"]').addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+});
+</script>
+{% endblock %}

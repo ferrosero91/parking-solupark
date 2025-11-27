@@ -1,0 +1,68 @@
+name: Deploy a Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    name: Deploy a Staging
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: staging
+      url: ${{ secrets.STAGING_URL }}
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Ejecutar tests
+      run: |
+        echo "DEBUG=True" > .env
+        echo "SECRET_KEY=test-key" >> .env
+        echo "DATABASE_ENGINE=django.db.backends.sqlite3" >> .env
+        echo "DATABASE_NAME=test.db" >> .env
+        echo "ALLOWED_HOSTS=localhost" >> .env
+        python manage.py test
+    
+    - name: Deploy a Render Staging
+      if: success()
+      uses: johnbeynon/render-deploy-action@v0.0.8
+      with:
+        service-id: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}
+    
+    - name: Verificar staging
+      run: |
+        sleep 30
+        response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.STAGING_URL }})
+        if [ $response -eq 200 ] || [ $response -eq 302 ]; then
+          echo "✅ Staging funcionando"
+        else
+          echo "⚠️ Staging responde con HTTP $response"
+        fi
+    
+    - name: Comentar en PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Deploy a staging completado!\n\nURL: ${{ secrets.STAGING_URL }}'
+          })

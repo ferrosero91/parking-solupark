@@ -1,0 +1,423 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+    <!-- Header con título y selector de fechas -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Cuadre de Caja</h1>
+            <div class="flex items-center mt-2">
+                <p class="text-sm text-gray-600 mr-2 flex items-center">
+                    <i class="fas fa-calendar-alt mr-2 text-primary"></i>
+                    Período:
+                </p>
+                <input type="text" id="date_range" class="text-sm text-gray-600 border rounded-md px-2 py-1" value="{{ start_date|date:'Y-m-d' }} - {{ end_date|date:'Y-m-d' }}">
+            </div>
+            {% if start_date != today %}
+            <p class="text-sm text-danger-color mt-1">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                Nota: Estás viendo un período diferente al día actual ({{ today|date:"d/m/Y" }}).
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 mb-4 text-sm rounded-lg {% if message.tags == 'success' %}bg-success-light text-success-color{% else %}bg-danger-light text-danger-color{% endif %}" role="alert">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} mr-2"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Formulario para establecer el dinero inicial (base para vueltos) -->
+    {% if not caja.dinero_inicial and not caja.cuadre_realizado %}
+    <div class="glass-effect rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">
+            <i class="fas fa-cash-register text-primary mr-2"></i>
+            Abrir Caja - Establecer Base para Vueltos
+        </h2>
+        <form method="post" onsubmit="return validateDineroInicial()">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="dinero_inicial" class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fas fa-dollar-sign text-success mr-2"></i>
+                    Dinero Inicial (Base para Vueltos):
+                </label>
+                <div class="relative mt-1 w-full md:w-1/2">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+                    <input type="text" name="dinero_inicial" id="dinero_inicial" class="pl-8 pr-3 py-3 block w-full rounded-lg border-2 border-gray-200 shadow-sm focus:border-primary focus:ring-2 focus:ring-primary-light text-sm" placeholder="0.00" required>
+                </div>
+                <p id="dinero_inicial_error" class="text-danger-color text-sm mt-1 hidden">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Por favor, ingrese un valor numérico válido y no negativo.
+                </p>
+            </div>
+            <button type="submit" name="set_dinero_inicial" class="gradient-primary text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all">
+                <i class="fas fa-check mr-2"></i>
+                Establecer Dinero Inicial
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Resumen de la caja -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <!-- Dinero Inicial -->
+        <div class="stat-card stat-card-primary glass-effect rounded-lg p-4 card-hover">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <p class="text-xs text-gray-500 mb-1">Dinero Inicial</p>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${{ caja.dinero_inicial|floatformat:2|intcomma }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Base para vueltos</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <i class="fas fa-wallet text-primary text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <!-- Ingresos en Efectivo -->
+        <div class="stat-card stat-card-success glass-effect rounded-lg p-4 card-hover">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <p class="text-xs text-gray-500 mb-1">Ingresos en Efectivo</p>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${{ total_income|floatformat:2|intcomma }}</p>
+                    <p class="text-xs text-green-600 mt-1 font-semibold">
+                        <i class="fas fa-money-bill-wave mr-1"></i>
+                        Solo efectivo
+                    </p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <i class="fas fa-dollar-sign text-success text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <!-- Dinero Esperado en Caja -->
+        <div class="stat-card stat-card-warning glass-effect rounded-lg p-4 card-hover">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <p class="text-xs text-gray-500 mb-1">Dinero Esperado en Caja</p>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-800">${{ dinero_esperado|floatformat:2|intcomma }}</p>
+                    <p class="text-xs text-gray-500 mt-1">Inicial + Efectivo</p>
+                </div>
+                <div class="bg-orange-100 p-3 rounded-lg">
+                    <i class="fas fa-calculator text-warning text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desglose por Medios de Pago -->
+    <div class="glass-effect rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-credit-card text-primary mr-2"></i>
+            Desglose por Medios de Pago
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Medio de Pago</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Cantidad</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Total</th>
+                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for payment in payment_summary %}
+                    <tr class="hover:bg-gray-50 {% if payment.is_efectivo %}bg-green-50{% endif %}">
+                        <td class="px-4 py-3 text-sm font-semibold text-gray-800">
+                            {% if payment.payment_method__icono %}
+                                <i class="{{ payment.payment_method__icono }} text-primary mr-2"></i>
+                            {% else %}
+                                <i class="fas fa-credit-card text-primary mr-2"></i>
+                            {% endif %}
+                            {{ payment.payment_method__nombre|default:"Sin especificar" }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600">
+                            <span class="px-3 py-1 {% if payment.is_efectivo %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded-full font-semibold">
+                                {{ payment.count }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-right font-bold {% if payment.is_efectivo %}text-green-600{% else %}text-blue-600{% endif %}">
+                            ${{ payment.total|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if payment.is_efectivo %}
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                                    <i class="fas fa-money-bill-wave mr-1"></i>
+                                    EFECTIVO
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                                    <i class="fas fa-credit-card mr-1"></i>
+                                    DIGITAL
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-wallet text-gray-300 text-4xl mb-2"></i>
+                            <p>No hay transacciones para este período</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <!-- Total General -->
+                    {% if payment_summary %}
+                    <tr class="bg-gray-100 font-bold">
+                        <td class="px-4 py-3 text-sm text-gray-900">
+                            <i class="fas fa-calculator text-primary mr-2"></i>
+                            TOTAL GENERAL
+                        </td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-900">
+                            {{ payment_summary|length }} método{{ payment_summary|length|pluralize }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-right text-gray-900">
+                            ${{ total_general|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-4 py-3"></td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p class="text-sm text-blue-800">
+                <i class="fas fa-info-circle mr-2"></i>
+                <strong>Nota:</strong> El cuadre de caja solo considera los ingresos en <strong>EFECTIVO</strong>. Los pagos digitales (tarjeta, transferencia, etc.) se registran pero no afectan el cuadre físico de caja.
+            </p>
+        </div>
+    </div>
+
+    <!-- Formulario para realizar el cuadre de caja -->
+    {% if caja.dinero_inicial and not caja.cuadre_realizado %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Realizar Cuadre de Caja</h2>
+        <form method="post" onsubmit="return validateDineroFinal()">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="dinero_final" class="block text-sm font-medium text-gray-700">Dinero Final (Dinero Real en Caja):</label>
+                <div class="relative mt-1 w-1/2">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">$</span>
+                    <input type="text" name="dinero_final" id="dinero_final" class="pl-8 pr-3 py-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="0.00" required>
+                </div>
+                <p id="dinero_final_error" class="text-red-600 text-sm mt-1 hidden">Por favor, ingrese un valor numérico válido y no negativo.</p>
+            </div>
+            <button type="submit" name="realizar_cuadre" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Realizar Cuadre
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Resultado del cuadre (si ya se realizó) -->
+    {% if caja.cuadre_realizado %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Resultado del Cuadre de Caja</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <p class="text-sm text-gray-600">Dinero Final (Real):</p>
+                <p class="text-xl font-bold text-gray-900">${{ caja.dinero_final|floatformat:2|intcomma }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600">Diferencia:</p>
+                <p class="text-xl font-bold {% if diferencia < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                    {% if diferencia < 0 %}
+                    Faltante: -${{ diferencia_abs|floatformat:2|intcomma }}
+                    {% elif diferencia > 0 %}
+                    Sobrante: +${{ diferencia_abs|floatformat:2|intcomma }}
+                    {% else %}
+                    $0.00 (Cuadre exacto)
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resumen de Ingresos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Tickets -->
+        <div class="glass-effect rounded-xl shadow-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-bold text-gray-600">
+                    <i class="fas fa-receipt text-blue-500 mr-2"></i>
+                    Tickets (Efectivo)
+                </h3>
+                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{{ tickets|length }}</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">${{ total_tickets|floatformat:0|intcomma }}</p>
+        </div>
+        
+        <!-- Mensualidades -->
+        <div class="glass-effect rounded-xl shadow-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-bold text-gray-600">
+                    <i class="fas fa-calendar-check text-cyan-500 mr-2"></i>
+                    Mensualidades (Efectivo)
+                </h3>
+                <span class="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full">{{ mensualidades|length }}</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">${{ total_mensualidades|floatformat:0|intcomma }}</p>
+        </div>
+    </div>
+
+    <!-- Lista de tickets -->
+    <div class="glass-effect rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-receipt text-primary mr-2"></i>
+            Tickets del Período (Efectivo)
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoría</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Entrada</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Salida</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for ticket in tickets %}
+                    <tr class="table-row">
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{{ ticket.placa }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">{{ ticket.category.name }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">{{ ticket.entry_time|date:"d/m/Y H:i" }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">{{ ticket.exit_time|date:"d/m/Y H:i" }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm font-bold text-success-color">${{ ticket.amount_paid|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-gray-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-receipt text-gray-400 text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium text-lg">No hay tickets para este período</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lista de mensualidades -->
+    <div class="glass-effect rounded-xl shadow-lg p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-calendar-check text-cyan-500 mr-2"></i>
+            Mensualidades del Período (Efectivo)
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Placa</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoría</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Fecha Pago</th>
+                        <th class="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for mensualidad in mensualidades %}
+                    <tr class="table-row">
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{{ mensualidad.cliente.nombre }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ mensualidad.cliente.placa }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">{{ mensualidad.category.name }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">{{ mensualidad.fecha_pago|date:"d/m/Y H:i" }}</td>
+                        <td class="px-3 md:px-6 py-4 whitespace-nowrap text-sm font-bold text-success-color">${{ mensualidad.monto|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-gray-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-calendar-check text-gray-400 text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium text-lg">No hay mensualidades para este período</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Incluir Flatpickr para el selector de fechas -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+// Configurar Flatpickr para el selector de fechas
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('#date_range', {
+        mode: 'range',
+        dateFormat: 'Y-m-d',
+        onChange: function(selectedDates, dateStr, instance) {
+            if (selectedDates.length === 2) {
+                const start_date = selectedDates[0].toISOString().split('T')[0];
+                const end_date = selectedDates[1].toISOString().split('T')[0];
+                window.location.href = `/cash-register/?start_date=${start_date}&end_date=${end_date}`;
+            }
+        }
+    });
+});
+
+// Función para formatear el input con separadores de miles y decimales
+function formatCurrency(input) {
+    let value = input.value.replace(/[^0-9]/g, ''); // Solo números
+    if (value === '') return;
+    value = (parseFloat(value) / 100).toFixed(2); // Convertir a formato con 2 decimales
+    input.value = parseFloat(value).toLocaleString('es-CO', { minimumFractionDigits: 2 }); // Formato con separadores de miles
+}
+
+// Validar el dinero inicial antes de enviar el formulario
+function validateDineroInicial() {
+    const input = document.getElementById('dinero_inicial');
+    const error = document.getElementById('dinero_inicial_error');
+    let value = input.value.replace(/[^0-9]/g, ''); // Solo números
+    if (value === '' || isNaN(value) || parseFloat(value) < 0) {
+        error.classList.remove('hidden');
+        return false;
+    }
+    error.classList.add('hidden');
+    input.value = parseFloat(value) / 100; // Convertir a formato numérico para enviar
+    return true;
+}
+
+// Validar el dinero final antes de enviar el formulario
+function validateDineroFinal() {
+    const input = document.getElementById('dinero_final');
+    const error = document.getElementById('dinero_final_error');
+    let value = input.value.replace(/[^0-9]/g, ''); // Solo números
+    if (value === '' || isNaN(value) || parseFloat(value) < 0) {
+        error.classList.remove('hidden');
+        return false;
+    }
+    error.classList.add('hidden');
+    input.value = parseFloat(value) / 100; // Convertir a formato numérico para enviar
+    return true;
+}
+
+// Aplicar formato al escribir en los inputs
+document.getElementById('dinero_inicial')?.addEventListener('input', function() {
+    formatCurrency(this);
+});
+document.getElementById('dinero_final')?.addEventListener('input', function() {
+    formatCurrency(this);
+});
+</script>
+{% endblock %}

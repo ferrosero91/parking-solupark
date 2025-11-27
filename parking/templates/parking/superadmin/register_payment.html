@@ -1,0 +1,146 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6 gradient-success text-white">
+            <h1 class="text-2xl font-bold flex items-center">
+                <i class="fas fa-cash-register mr-3"></i>
+                Registrar Pago de Suscripción
+            </h1>
+        </div>
+
+        <div class="p-8">
+            <!-- Información del Parqueadero -->
+            <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <h3 class="font-semibold text-blue-900 mb-3 flex items-center">
+                    <i class="fas fa-building mr-2"></i>
+                    Información del Parqueadero
+                </h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-blue-800"><strong>Empresa:</strong> {{ parking_lot.empresa }}</p>
+                        <p class="text-blue-800"><strong>Email:</strong> {{ parking_lot.user.email }}</p>
+                    </div>
+                    <div>
+                        <p class="text-blue-800"><strong>Plan:</strong> {{ parking_lot.get_plan_type_display }}</p>
+                        <p class="text-blue-800"><strong>Precio:</strong> ${{ parking_lot.get_current_price|floatformat:0 }}</p>
+                    </div>
+                </div>
+                {% if parking_lot.subscription_end %}
+                <div class="mt-3 pt-3 border-t border-blue-200">
+                    <p class="text-blue-800">
+                        <strong>Vencimiento actual:</strong> {{ parking_lot.subscription_end|date:"d/m/Y" }}
+                        <span class="{% if parking_lot.days_until_expiration <= 5 %}text-red-600{% else %}text-blue-600{% endif %} font-semibold">
+                            ({{ parking_lot.days_until_expiration }} días restantes)
+                        </span>
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Formulario de Pago -->
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-dollar-sign mr-1 text-green-500"></i>
+                            Monto del Pago *
+                        </label>
+                        <input type="number" 
+                               name="amount" 
+                               step="0.01" 
+                               required
+                               value="{{ parking_lot.get_current_price }}"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                               placeholder="50000">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-credit-card mr-1 text-blue-500"></i>
+                            Método de Pago *
+                        </label>
+                        <select name="payment_method" 
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <option value="">Seleccione...</option>
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                            <option value="TARJETA">Tarjeta de Crédito/Débito</option>
+                            <option value="NEQUI">Nequi</option>
+                            <option value="DAVIPLATA">Daviplata</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-hashtag mr-1 text-purple-500"></i>
+                        Número de Referencia (opcional)
+                    </label>
+                    <input type="text" 
+                           name="reference_number" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           placeholder="Ej: TRX123456789">
+                    <p class="text-xs text-gray-500 mt-1">Número de transacción, comprobante o referencia del pago</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sticky-note mr-1 text-yellow-500"></i>
+                        Notas (opcional)
+                    </label>
+                    <textarea name="notes" 
+                              rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              placeholder="Información adicional sobre el pago..."></textarea>
+                </div>
+
+                <!-- Información de lo que sucederá -->
+                <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                    <h4 class="font-semibold text-green-900 mb-2 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Al registrar este pago:
+                    </h4>
+                    <ul class="text-sm text-green-800 space-y-1 ml-6 list-disc">
+                        <li>Se extenderá la suscripción por {{ parking_lot.get_plan_type_display|lower }}</li>
+                        <li>El parqueadero será activado automáticamente</li>
+                        <li>El usuario podrá acceder al sistema</li>
+                        <li>Se registrará el pago en el historial</li>
+                    </ul>
+                </div>
+
+                <div class="flex space-x-4 pt-4">
+                    <button type="submit" class="flex-1 gradient-success text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105">
+                        <i class="fas fa-check mr-2"></i>
+                        Registrar Pago y Activar
+                    </button>
+                    <a href="{% url 'payment_management' %}" class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors text-center">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    input[type="number"],
+    input[type="text"],
+    textarea,
+    select {
+        font-size: 0.875rem;
+    }
+    
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+    }
+</style>
+{% endblock %}

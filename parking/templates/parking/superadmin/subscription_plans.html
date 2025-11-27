@@ -1,0 +1,160 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 mb-2 flex items-center">
+                <i class="fas fa-tags text-purple-500 mr-3"></i>
+                <span class="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Planes de Suscripción</span>
+            </h1>
+            <p class="text-slate-500 ml-11">Gestión de planes y precios</p>
+        </div>
+        <a href="{% url 'superadmin_dashboard' %}" class="inline-flex items-center px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Volver
+        </a>
+    </div>
+
+    <!-- Planes Actuales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for plan in plans %}
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 {% if not plan.is_active %}opacity-60{% endif %}">
+            <div class="p-6 {% if plan.plan_type == 'MENSUAL' %}bg-gradient-to-br from-blue-500 to-blue-600{% elif plan.plan_type == 'TRIMESTRAL' %}bg-gradient-to-br from-green-500 to-green-600{% elif plan.plan_type == 'SEMESTRAL' %}bg-gradient-to-br from-orange-500 to-orange-600{% else %}bg-gradient-to-br from-purple-500 to-purple-600{% endif %} text-white">
+                <h3 class="text-xl font-bold mb-2">{{ plan.name }}</h3>
+                <div class="text-3xl font-black mb-1">${{ plan.price|floatformat:0|intcomma }}</div>
+                <div class="text-sm opacity-90">{{ plan.duration_days }} días</div>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">{{ plan.description|default:"Sin descripción" }}</p>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-semibold {% if plan.is_active %}text-green-600{% else %}text-gray-400{% endif %}">
+                        {% if plan.is_active %}
+                        <i class="fas fa-check-circle mr-1"></i> Activo
+                        {% else %}
+                        <i class="fas fa-times-circle mr-1"></i> Inactivo
+                        {% endif %}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                        {{ plan.parking_lots.count }} parqueadero{{ plan.parking_lots.count|pluralize }}
+                    </span>
+                </div>
+                <button onclick="editPlan({{ plan.id }}, '{{ plan.name }}', {{ plan.price }}, {{ plan.duration_days }}, '{{ plan.description|escapejs }}', {{ plan.is_active|yesno:'true,false' }})" 
+                        class="w-full px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold">
+                    <i class="fas fa-edit mr-1"></i> Editar Plan
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Formulario para Crear/Editar Plan -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-plus-circle mr-2 text-green-500"></i>
+            <span id="form-title">Crear Nuevo Plan</span>
+        </h2>
+        
+        <form method="post" id="plan-form" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="form-action" value="create">
+            <input type="hidden" name="plan_id" id="plan-id">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Plan *</label>
+                    <input type="text" name="name" id="plan-name" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Ej: Plan Premium">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Plan *</label>
+                    <select name="plan_type" id="plan-type" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="">Seleccione...</option>
+                        <option value="MENSUAL">Mensual</option>
+                        <option value="TRIMESTRAL">Trimestral</option>
+                        <option value="SEMESTRAL">Semestral</option>
+                        <option value="ANUAL">Anual</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Precio *</label>
+                    <input type="number" name="price" id="plan-price" step="0.01" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="50000">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duración (días) *</label>
+                    <input type="number" name="duration_days" id="plan-duration" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="30">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                    <textarea name="description" id="plan-description" rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="Descripción del plan..."></textarea>
+                </div>
+
+                <div class="md:col-span-2" id="active-checkbox-container" style="display: none;">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" id="plan-active" class="mr-2">
+                        <span class="text-sm font-medium text-gray-700">Plan Activo</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex space-x-4">
+                <button type="submit" class="flex-1 gradient-success text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+                    <i class="fas fa-check mr-2"></i>
+                    <span id="submit-text">Crear Plan</span>
+                </button>
+                <button type="button" onclick="resetForm()" class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editPlan(id, name, price, duration, description, isActive) {
+    document.getElementById('form-title').textContent = 'Editar Plan';
+    document.getElementById('form-action').value = 'update';
+    document.getElementById('plan-id').value = id;
+    document.getElementById('plan-name').value = name;
+    document.getElementById('plan-price').value = price;
+    document.getElementById('plan-duration').value = duration;
+    document.getElementById('plan-description').value = description;
+    document.getElementById('plan-active').checked = isActive;
+    document.getElementById('submit-text').textContent = 'Actualizar Plan';
+    document.getElementById('active-checkbox-container').style.display = 'block';
+    document.getElementById('plan-type').disabled = true;
+    
+    // Scroll al formulario
+    document.getElementById('plan-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+    document.getElementById('form-title').textContent = 'Crear Nuevo Plan';
+    document.getElementById('form-action').value = 'create';
+    document.getElementById('plan-form').reset();
+    document.getElementById('submit-text').textContent = 'Crear Plan';
+    document.getElementById('active-checkbox-container').style.display = 'none';
+    document.getElementById('plan-type').disabled = false;
+}
+</script>
+
+<style>
+    input, select, textarea {
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

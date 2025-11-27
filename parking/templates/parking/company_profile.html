@@ -1,0 +1,127 @@
+{% extends 'parking/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="w-full max-w-3xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-slate-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    Mi Empresa
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    Información del parqueadero
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas fa-building text-primary text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+        <div class="mb-6 space-y-3">
+            {% for message in messages %}
+            <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-green-50 border-2 border-green-200{% elif message.tags == 'error' %}bg-red-50 border-2 border-red-200{% else %}bg-blue-50 border-2 border-blue-200{% endif %}">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">
+                            {{ message }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4 sm:space-y-6">
+            {% csrf_token %}
+            
+            <!-- Nombre de la Empresa -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    {{ form.empresa.label }}
+                </label>
+                <div class="relative">
+                    <input type="text" name="empresa" value="{{ form.empresa.value|default:'' }}" required
+                           class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-building text-primary text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NIT -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    {{ form.nit.label }}
+                </label>
+                <div class="relative">
+                    <input type="text" name="nit" value="{{ form.nit.value|default:'' }}"
+                           class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-id-card text-primary text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teléfono y Dirección en Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Teléfono -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        {{ form.telefono.label }}
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="telefono" value="{{ form.telefono.value|default:'' }}" required
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-phone text-success text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dirección -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        {{ form.direccion.label }}
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="direccion" value="{{ form.direccion.value|default:'' }}" required
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white hover:border-gray-300">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-map-marker-alt text-danger text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                <button type="submit" 
+                        class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-save mr-2 text-lg sm:text-xl"></i>
+                    Guardar Cambios
+                </button>
+                <a href="{% url 'dashboard' %}"
+                   class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

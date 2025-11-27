@@ -1,0 +1,166 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 mb-2 flex items-center">
+                <i class="fas fa-crown text-yellow-500 mr-3"></i>
+                <span class="bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">Panel de Superadministrador</span>
+            </h1>
+            <p class="text-slate-500 ml-11">Gestión centralizada de parqueaderos</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'subscription_plans' %}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <i class="fas fa-tags mr-2 text-lg"></i>
+                Planes
+            </a>
+            <a href="{% url 'payment_management' %}" class="inline-flex items-center px-6 py-3 gradient-success text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <i class="fas fa-money-bill-wave mr-2 text-lg"></i>
+                Pagos
+            </a>
+            <a href="{% url 'create_parking_lot' %}" class="inline-flex items-center px-6 py-3 gradient-primary text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <i class="fas fa-plus-circle mr-2 text-lg"></i>
+                Crear Parqueadero
+            </a>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="stat-card gradient-primary text-white rounded-2xl shadow-xl p-6 card-hover relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fas fa-building text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-medium opacity-90">Total Parqueaderos</div>
+                        <div class="text-5xl font-black mt-1">{{ total_parking_lots }}</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-white/20">
+                    <p class="text-sm opacity-90">Registrados en el sistema</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card gradient-success text-white rounded-2xl shadow-xl p-6 card-hover relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fas fa-check-circle text-3xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-medium opacity-90">Parqueaderos Activos</div>
+                        <div class="text-5xl font-black mt-1">{{ active_parking_lots }}</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-white/20">
+                    <p class="text-sm opacity-90">Operando actualmente</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Parqueaderos -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-bold text-gray-900">Parqueaderos Registrados</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Correo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Suscripción</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for parking in parking_lots %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ parking.empresa }}</div>
+                            {% if parking.nit %}
+                            <div class="text-sm text-gray-500">NIT: {{ parking.nit }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ parking.user.email }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if parking.plan_type == 'ANUAL' %}bg-purple-100 text-purple-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ parking.get_plan_type_display }}
+                            </span>
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${{ parking.get_current_price|floatformat:0 }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if parking.subscription_end %}
+                                <div class="text-gray-900">Vence: {{ parking.subscription_end|date:"d/m/Y" }}</div>
+                                <div class="text-xs {% if parking.days_until_expiration <= 7 %}text-red-600{% elif parking.days_until_expiration <= 15 %}text-yellow-600{% else %}text-gray-500{% endif %}">
+                                    {{ parking.days_until_expiration }} días restantes
+                                </div>
+                            {% else %}
+                                <span class="text-gray-400">Sin suscripción</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if parking.is_active and not parking.is_expired %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i> Activo
+                            </span>
+                            {% elif parking.is_expired %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                <i class="fas fa-exclamation-circle mr-1"></i> Vencido
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                <i class="fas fa-ban mr-1"></i> Inactivo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <a href="{% url 'edit_parking_lot' parking.pk %}" 
+                                   class="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded transition-colors" 
+                                   title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'renew_subscription' parking.pk %}" 
+                                   class="text-purple-600 hover:text-purple-900 p-2 hover:bg-purple-50 rounded transition-colors" 
+                                   title="Renovar Suscripción">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                                <a href="{% url 'toggle_parking_lot_status' parking.pk %}" 
+                                   class="{% if parking.is_active %}text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50{% else %}text-green-600 hover:text-green-900 hover:bg-green-50{% endif %} p-2 rounded transition-colors" 
+                                   title="{% if parking.is_active %}Desactivar{% else %}Activar{% endif %}">
+                                    <i class="fas fa-power-off"></i>
+                                </a>
+                                <a href="{% url 'delete_parking_lot' parking.pk %}" 
+                                   class="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded transition-colors" 
+                                   title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No hay parqueaderos registrados
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

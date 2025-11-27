@@ -1,0 +1,273 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="w-full max-w-3xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-gray-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    {{ title }}
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    {% if is_edit %}Modifique la información del usuario{% else %}Complete la información del nuevo usuario{% endif %}
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas fa-user-cog text-primary text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-4 sm:space-y-6">
+            {% csrf_token %}
+            
+            <!-- Nombre y Apellido en Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Nombre -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Nombre <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.first_name }}
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-primary text-lg"></i>
+                        </div>
+                    </div>
+                    {% if form.first_name.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Apellido -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Apellido <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.last_name }}
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-primary text-lg"></i>
+                        </div>
+                    </div>
+                    {% if form.last_name.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if not is_edit %}
+            <!-- Usuario -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    Nombre de Usuario <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    {{ form.username }}
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-at text-primary text-lg"></i>
+                    </div>
+                </div>
+                {% if form.username.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.username.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Email -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    Email <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    {{ form.email }}
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-envelope text-primary text-lg"></i>
+                    </div>
+                </div>
+                {% if form.email.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            {% if not is_edit %}
+            <!-- Contraseñas en Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Contraseña <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.password1 }}
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-primary text-lg"></i>
+                        </div>
+                    </div>
+                    {% if form.password1.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.password1.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Confirmar Contraseña -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Confirmar Contraseña <span class="text-danger-color">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.password2 }}
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-primary text-lg"></i>
+                        </div>
+                    </div>
+                    {% if form.password2.errors %}
+                        <p class="text-red-600 text-sm mt-1">{{ form.password2.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Rol -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    Rol <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    {{ form.role }}
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-user-tag text-primary text-lg"></i>
+                    </div>
+                </div>
+                {% if form.role.errors %}
+                    <p class="text-red-600 text-sm mt-1">{{ form.role.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            {% if is_edit %}
+            <!-- Cambiar Contraseña (solo en edición) -->
+            <div class="p-6 bg-orange-50 rounded-xl border-2 border-orange-200">
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="change_password" class="w-5 h-5 text-orange-600 border-2 border-gray-300 rounded focus:ring-2 focus:ring-orange-light">
+                    <label for="change_password" class="ml-3 text-sm font-bold text-gray-700">
+                        <i class="fas fa-key text-orange-600 mr-2"></i>
+                        Cambiar contraseña
+                    </label>
+                </div>
+                
+                <div id="password-fields" class="hidden space-y-4">
+                    <div class="form-group">
+                        <label class="block text-sm font-bold text-gray-700 mb-3">
+                            Nueva Contraseña
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="new_password" id="new_password"
+                                   class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white"
+                                   placeholder="••••••••">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-orange-600 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="block text-sm font-bold text-gray-700 mb-3">
+                            Confirmar Nueva Contraseña
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="confirm_password" id="confirm_password"
+                                   class="block w-full pl-12 pr-4 py-4 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white"
+                                   placeholder="••••••••">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-orange-600 text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-xs text-orange-700 flex items-start">
+                        <i class="fas fa-info-circle mr-2 mt-0.5"></i>
+                        <span>La contraseña debe tener al menos 8 caracteres. El usuario podrá iniciar sesión con su email y esta nueva contraseña.</span>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Estado Activo -->
+            <div class="p-6 bg-gray-50 rounded-xl border-2 border-gray-200">
+                <div class="flex items-center">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}" class="ml-3 text-sm font-bold text-gray-700">
+                        Usuario activo
+                    </label>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 ml-8">
+                    Los usuarios inactivos no podrán iniciar sesión en el sistema
+                </p>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                <button type="submit" 
+                        class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-save mr-2 text-lg sm:text-xl"></i>
+                    {% if is_edit %}Actualizar Usuario{% else %}Crear Usuario{% endif %}
+                </button>
+                <a href="{% url 'user-list' %}"
+                   class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if is_edit %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const changePasswordCheckbox = document.getElementById('change_password');
+    const passwordFields = document.getElementById('password-fields');
+    const newPasswordInput = document.getElementById('new_password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    
+    // Mostrar/ocultar campos de contraseña
+    changePasswordCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            passwordFields.classList.remove('hidden');
+            newPasswordInput.setAttribute('required', '');
+            confirmPasswordInput.setAttribute('required', '');
+        } else {
+            passwordFields.classList.add('hidden');
+            newPasswordInput.removeAttribute('required');
+            confirmPasswordInput.removeAttribute('required');
+            newPasswordInput.value = '';
+            confirmPasswordInput.value = '';
+        }
+    });
+    
+    // Validar que las contraseñas coincidan
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        if (changePasswordCheckbox.checked) {
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            if (newPassword !== confirmPassword) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden. Por favor, verifica e intenta nuevamente.');
+                confirmPasswordInput.focus();
+                return false;
+            }
+            
+            if (newPassword.length < 8) {
+                e.preventDefault();
+                alert('La contraseña debe tener al menos 8 caracteres.');
+                newPasswordInput.focus();
+                return false;
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

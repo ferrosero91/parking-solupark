@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: parking-system
+    env: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn parking_system.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_ENGINE
+        value: django.db.backends.postgresql
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    autoDeploy: true
+
+databases:
+  - name: parking-db
+    databaseName: parking_system
+    user: parking_user

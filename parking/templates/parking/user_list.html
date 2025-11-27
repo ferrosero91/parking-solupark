@@ -1,0 +1,188 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                Gestión de Usuarios
+            </h1>
+            <p class="text-gray-600 flex items-center">
+                <i class="fas fa-users mr-2 text-primary"></i>
+                Administra los usuarios del sistema
+            </p>
+        </div>
+        <a href="{% url 'user-create' %}" 
+           class="gradient-primary text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center">
+            <i class="fas fa-user-plus mr-2"></i>
+            Nuevo Usuario
+        </a>
+    </div>
+
+    <!-- Buscador -->
+    <div class="glass-effect p-4 rounded-xl shadow-lg border border-gray-200">
+        <form method="get" class="flex gap-3">
+            <div class="flex-1 relative">
+                <input type="text" name="search" value="{{ search_query }}" 
+                       placeholder="Buscar por nombre, usuario o email..."
+                       class="block w-full pl-12 pr-4 py-3 text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-xl shadow-sm transition-all bg-white">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+            </div>
+            <button type="submit" class="gradient-primary text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all">
+                <i class="fas fa-search mr-2"></i>
+                Buscar
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de Usuarios -->
+    <div class="glass-effect rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Usuario</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Rol</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in users_with_roles %}
+                    <tr class="table-row hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white font-bold">
+                                        {{ item.user.first_name.0|default:item.user.username.0|upper }}
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-bold text-gray-900">
+                                        {{ item.user.first_name }} {{ item.user.last_name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        @{{ item.user.username }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ item.user.email }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ item.role_class }}">
+                                <i class="fas {{ item.role_icon }} mr-1"></i>
+                                {{ item.role }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if item.user.is_active %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Activo
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    Inactivo
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'user-edit' item.user.pk %}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors"
+                                   title="Editar">
+                                    <i class="fas fa-edit text-lg"></i>
+                                </a>
+                                
+                                {% if not item.user.is_superuser %}
+                                <a href="{% url 'user-toggle-status' item.user.pk %}" 
+                                   class="{% if item.user.is_active %}text-orange-600 hover:text-orange-900{% else %}text-green-600 hover:text-green-900{% endif %} transition-colors"
+                                   title="{% if item.user.is_active %}Desactivar{% else %}Activar{% endif %}"
+                                   onclick="return confirm('¿Estás seguro de {% if item.user.is_active %}desactivar{% else %}activar{% endif %} este usuario?')">
+                                    <i class="fas {% if item.user.is_active %}fa-ban{% else %}fa-check-circle{% endif %} text-lg"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <div class="bg-gray-100 p-6 rounded-full mb-4">
+                                    <i class="fas fa-users text-gray-400 text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium text-lg">No hay usuarios registrados</p>
+                                <a href="{% url 'user-create' %}" class="mt-4 text-primary hover:underline">
+                                    <i class="fas fa-plus mr-1"></i>
+                                    Crear primer usuario
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Información de Roles -->
+    <div class="glass-effect rounded-2xl shadow-xl p-6 border border-gray-200">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-info-circle text-primary mr-2"></i>
+            Información de Roles y Permisos
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Administrador -->
+            <div class="p-4 bg-purple-50 rounded-xl border-2 border-purple-200">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-user-shield text-purple-600 text-2xl mr-3"></i>
+                    <h4 class="font-bold text-purple-900">Administrador</h4>
+                </div>
+                <ul class="text-sm text-purple-800 space-y-1">
+                    <li><i class="fas fa-check mr-2"></i>Acceso total al sistema</li>
+                    <li><i class="fas fa-check mr-2"></i>Gestión de usuarios</li>
+                    <li><i class="fas fa-check mr-2"></i>Configuración</li>
+                    <li><i class="fas fa-check mr-2"></i>Reportes completos</li>
+                </ul>
+            </div>
+
+            <!-- Cajero -->
+            <div class="p-4 bg-green-50 rounded-xl border-2 border-green-200">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-cash-register text-green-600 text-2xl mr-3"></i>
+                    <h4 class="font-bold text-green-900">Cajero</h4>
+                </div>
+                <ul class="text-sm text-green-800 space-y-1">
+                    <li><i class="fas fa-check mr-2"></i>Registro de entradas/salidas</li>
+                    <li><i class="fas fa-check mr-2"></i>Cuadre de caja</li>
+                    <li><i class="fas fa-check mr-2"></i>Ver reportes básicos</li>
+                    <li><i class="fas fa-times mr-2"></i>Sin acceso a configuración</li>
+                </ul>
+            </div>
+
+            <!-- Operador -->
+            <div class="p-4 bg-blue-50 rounded-xl border-2 border-blue-200">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-user text-blue-600 text-2xl mr-3"></i>
+                    <h4 class="font-bold text-blue-900">Operador</h4>
+                </div>
+                <ul class="text-sm text-blue-800 space-y-1">
+                    <li><i class="fas fa-check mr-2"></i>Registro de entradas</li>
+                    <li><i class="fas fa-check mr-2"></i>Ver tickets</li>
+                    <li><i class="fas fa-times mr-2"></i>Sin acceso a caja</li>
+                    <li><i class="fas fa-times mr-2"></i>Sin acceso a reportes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

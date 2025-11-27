@@ -1,0 +1,126 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="w-full max-w-3xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-gray-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    {% if payment_method %}Editar{% else %}Nuevo{% endif %} Medio de Pago
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    Complete la información del medio de pago
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas fa-wallet text-primary text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-4 sm:space-y-6">
+            {% csrf_token %}
+            
+            <!-- Nombre -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-tag text-primary mr-2"></i>
+                    Nombre del Medio de Pago <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <input type="text" name="nombre" value="{% if payment_method %}{{ payment_method.nombre }}{% endif %}" required
+                           class="block w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 md:py-4 text-sm sm:text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-lg sm:rounded-xl shadow-sm transition-all bg-white hover:border-gray-300"
+                           placeholder="Ej: Efectivo, Nequi, Tarjeta">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-tag text-primary text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-align-left text-primary mr-2"></i>
+                    Descripción
+                </label>
+                <textarea name="descripcion" rows="3"
+                          class="block w-full px-4 py-3 text-sm sm:text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-lg sm:rounded-xl shadow-sm transition-all bg-white hover:border-gray-300"
+                          placeholder="Descripción opcional del medio de pago">{% if payment_method %}{{ payment_method.descripcion }}{% endif %}</textarea>
+            </div>
+
+            <!-- Icono -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    <i class="fas fa-icons text-primary mr-2"></i>
+                    Seleccione un Icono <span class="text-danger-color">*</span>
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {% for icono in iconos %}
+                    <label class="relative cursor-pointer group">
+                        <input type="radio" name="icono" value="{{ icono.value }}" 
+                               {% if payment_method and payment_method.icono == icono.value %}checked{% elif not payment_method and forloop.first %}checked{% endif %}
+                               class="peer sr-only" required>
+                        <div class="p-4 border-2 border-gray-200 rounded-xl text-center transition-all hover:border-primary-400 hover:shadow-md hover:scale-105 peer-checked:border-primary-500 peer-checked:bg-gradient-to-br peer-checked:from-primary-50 peer-checked:to-blue-50 peer-checked:shadow-xl peer-checked:scale-105">
+                            <i class="fas {{ icono.value }} text-3xl text-gray-500 transition-all group-hover:text-primary-400 peer-checked:text-primary-600 mb-2"></i>
+                            <p class="text-xs font-medium text-gray-700 peer-checked:text-primary-700 peer-checked:font-bold">{{ icono.label }}</p>
+                        </div>
+                        <!-- Checkmark cuando está seleccionado -->
+                        <div class="hidden peer-checked:block absolute -top-2 -right-2 bg-primary-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                            <i class="fas fa-check text-xs"></i>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Color (oculto, siempre primary) -->
+            <input type="hidden" name="color" value="primary">
+
+            <!-- Orden y Estado en Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Orden -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        <i class="fas fa-sort-numeric-down text-primary mr-2"></i>
+                        Orden de Visualización
+                    </label>
+                    <input type="number" name="orden" value="{% if payment_method %}{{ payment_method.orden }}{% else %}0{% endif %}" min="0"
+                           class="block w-full px-4 py-3 text-sm sm:text-base border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary rounded-lg sm:rounded-xl shadow-sm transition-all bg-white hover:border-gray-300"
+                           placeholder="0">
+                </div>
+
+                <!-- Estado Activo -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        <i class="fas fa-toggle-on text-success mr-2"></i>
+                        Estado
+                    </label>
+                    <div class="flex items-center p-4 bg-gray-50 rounded-xl">
+                        <input type="checkbox" name="is_active" id="is_active" 
+                               {% if not payment_method or payment_method.is_active %}checked{% endif %}
+                               class="w-5 h-5 text-primary border-2 border-gray-300 rounded focus:ring-2 focus:ring-primary-light">
+                        <label for="is_active" class="ml-3 text-sm font-medium text-gray-700">
+                            Medio de pago activo
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                <button type="submit" 
+                        class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-save mr-2 text-lg sm:text-xl"></i>
+                    {% if payment_method %}Actualizar{% else %}Crear{% endif %} Medio de Pago
+                </button>
+                <a href="{% url 'payment-method-list' %}"
+                   class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

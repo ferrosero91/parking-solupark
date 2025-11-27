@@ -1,0 +1,46 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
+    <div class="text-center mb-6">
+        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900">Eliminar Parqueadero</h2>
+        <p class="text-gray-600 mt-2">¿Estás seguro de que deseas eliminar este parqueadero?</p>
+    </div>
+
+    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        <p class="text-sm text-gray-700"><strong>Nombre:</strong> {{ parking_lot.empresa }}</p>
+        <p class="text-sm text-gray-700"><strong>Correo:</strong> {{ parking_lot.user.email }}</p>
+        <p class="text-sm text-gray-700"><strong>Teléfono:</strong> {{ parking_lot.telefono }}</p>
+    </div>
+
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-yellow-700">
+                    Esta acción eliminará permanentemente el parqueadero, su usuario asociado y todos sus datos (tickets, categorías, etc.). Esta acción no se puede deshacer.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div class="flex space-x-4">
+            <button type="submit" class="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200">
+                <i class="fas fa-trash mr-2"></i>
+                Sí, Eliminar
+            </button>
+            <a href="{% url 'superadmin_dashboard' %}" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center">
+                <i class="fas fa-times mr-2"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

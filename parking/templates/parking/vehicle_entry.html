@@ -1,0 +1,278 @@
+{% extends 'parking/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="w-full max-w-2xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-slate-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    Registro de Ingreso
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    Los campos marcados con <span class="text-danger-color mx-1">*</span> son obligatorios
+                </p>
+            </div>
+            <div class="bg-green-100 p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas fa-car-side text-success text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-4 sm:space-y-6" id="entry-form" autocomplete="off">
+            {% csrf_token %}
+
+            <!-- Categoría -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    Categoría <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <select name="category" id="category" required 
+                            class="block w-full pl-12 pr-4 py-4 text-base border-2 border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 rounded-xl shadow-sm transition-all bg-white hover:border-primary-300">
+                        <option value="">Seleccione una categoría</option>
+                        {% for choice in form.category.field.choices %}
+                            {% if choice.0 != '' and choice.1 != '--------' %}
+                                <option value="{{ choice.0 }}">{{ choice.1 }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-tags text-primary-400 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Placa -->
+            <div class="form-group">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    Placa <span class="text-danger-color">*</span>
+                </label>
+                <div class="relative">
+                    <input type="text" name="placa" required
+                           class="block w-full pl-12 pr-4 py-4 text-base border-2 border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-xl shadow-sm transition-all uppercase bg-white hover:border-blue-300" 
+                           placeholder="Ej: ABC123">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-car text-blue-400 text-lg"></i>
+                    </div>
+                </div>
+                <div id="plate-validation" class="mt-2 text-sm hidden"></div>
+            </div>
+
+            <!-- Color y Marca en Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Color -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Color <span class="text-gray-500 text-xs">(opcional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="color" 
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 rounded-xl shadow-sm transition-all bg-white hover:border-purple-300" 
+                               placeholder="Ej: Rojo">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-palette text-purple-400 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marca -->
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Marca <span class="text-gray-500 text-xs">(opcional)</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" name="marca" 
+                               class="block w-full pl-12 pr-4 py-4 text-base border-2 border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 rounded-xl shadow-sm transition-all bg-white hover:border-pink-300" 
+                               placeholder="Ej: Toyota">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-tag text-pink-400 text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campo de Cascos (inicialmente oculto) -->
+            <div id="cascos-field" class="form-group hidden">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    Número de Cascos <span class="text-danger-color cascos-required hidden">*</span>
+                </label>
+                <div class="relative">
+                    <input type="number" name="cascos" min="0" value="0"
+                           class="block w-full pl-12 pr-4 py-4 text-base border-2 border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 rounded-xl shadow-sm transition-all bg-white hover:border-orange-300" 
+                           placeholder="Cantidad de cascos">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-helmet-safety text-orange-400 text-lg"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                <button type="submit" 
+                        class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-check-circle mr-2 text-lg sm:text-xl"></i>
+                    Registrar Ingreso
+                </button>
+                <a href="{% url 'dashboard' %}"
+                   class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM cargado, inicializando formulario...'); // Debug
+    
+    const form = document.getElementById('entry-form');
+    const plateInput = form.querySelector('input[name="placa"]');
+    const validationDiv = document.getElementById('plate-validation');
+    const categorySelect = document.getElementById('category');
+    const cascosField = document.getElementById('cascos-field');
+    const cascosInput = form.querySelector('input[name="cascos"]');
+    const cascosRequired = document.querySelector('.cascos-required');
+    
+    // Verificar que todos los elementos existen
+    console.log('Elementos encontrados:', {
+        form: !!form,
+        categorySelect: !!categorySelect,
+        cascosField: !!cascosField,
+        cascosInput: !!cascosInput
+    });
+    
+    // Función para mostrar/ocultar el campo de cascos
+    function toggleCascosField() {
+        if (!categorySelect || !cascosField) {
+            console.error('Elementos no encontrados');
+            return;
+        }
+        
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        if (!selectedOption) {
+            console.log('No hay opción seleccionada');
+            return;
+        }
+        
+        const categoryName = selectedOption.text.toUpperCase();
+        console.log('Categoría seleccionada:', categoryName);
+        
+        // Buscar si el texto contiene "MOTOS" (sin importar si tiene prefijo del parqueadero)
+        const isMotos = categoryName.includes('MOTOS');
+        console.log('¿Es MOTOS?:', isMotos);
+        
+        if (isMotos) {
+            console.log('✓ Mostrando campo de cascos');
+            cascosField.style.display = 'block';
+            cascosField.classList.remove('hidden');
+            if (cascosRequired) cascosRequired.classList.remove('hidden');
+            if (cascosInput) cascosInput.setAttribute('required', '');
+        } else {
+            console.log('✗ Ocultando campo de cascos');
+            cascosField.style.display = 'none';
+            cascosField.classList.add('hidden');
+            if (cascosRequired) cascosRequired.classList.add('hidden');
+            if (cascosInput) cascosInput.removeAttribute('required');
+        }
+    }
+
+    // Escuchar cambios en la selección de categoría
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            console.log('Cambio detectado en categoría');
+            toggleCascosField();
+        });
+        
+        // También verificar al cargar la página si ya hay una categoría seleccionada
+        if (categorySelect.value) {
+            console.log('Verificando categoría inicial');
+            toggleCascosField();
+        }
+    } else {
+        console.error('categorySelect no encontrado');
+    }
+    
+    // Validación de placa
+    plateInput.addEventListener('input', _.debounce(async function(e) {
+        const plate = this.value.trim().toUpperCase();
+        
+        if (plate.length > 2) {
+            try {
+                const response = await fetch(`/validate-plate/${plate}/`);
+                const data = await response.json();
+                
+                if (data.exists) {
+                    validationDiv.classList.remove('hidden', 'text-green-600');
+                    validationDiv.classList.add('text-red-600');
+                    validationDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> Este vehículo ya se encuentra en el estacionamiento`;
+                    this.setCustomValidity('Vehículo ya ingresado');
+                } else {
+                    validationDiv.classList.remove('hidden', 'text-red-600');
+                    validationDiv.classList.add('text-green-600');
+                    validationDiv.innerHTML = `<i class="fas fa-check-circle"></i> Placa disponible`;
+                    this.setCustomValidity('');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        } else {
+            validationDiv.classList.add('hidden');
+            this.setCustomValidity('');
+        }
+    }, 300));
+    
+    // Convertir inputs a mayúsculas
+    form.querySelectorAll('input[type="text"]').forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    });
+    
+    // Validación del formulario
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const categoryText = categorySelect.options[categorySelect.selectedIndex].text.toUpperCase();
+        const plate = plateInput.value.trim().toUpperCase();
+
+        if (plate) {
+            try {
+                const response = await fetch(`/validate-plate/${plate}/`);
+                const data = await response.json();
+                
+                if (data.exists) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Este vehículo ya se encuentra en el estacionamiento',
+                        confirmButtonColor: '#0ea5e9'
+                    });
+                    return;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        if (categoryText === 'MOTOS' && (!cascosInput.value && cascosInput.value !== '0')) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'El número de cascos es obligatorio para motos',
+                confirmButtonColor: '#0ea5e9'
+            });
+            return;
+        }
+        
+        form.submit();
+    });
+});
+</script>
+{% endblock %}

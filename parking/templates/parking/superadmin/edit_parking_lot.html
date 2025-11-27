@@ -1,0 +1,141 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Editar Parqueadero</h2>
+        <p class="text-gray-600 mt-1">{{ parking_lot.empresa }}</p>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.empresa.label }}</label>
+                {{ form.empresa }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.nit.label }}</label>
+                {{ form.nit }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.direccion.label }}</label>
+                {{ form.direccion }}
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.email.label }}</label>
+                {{ form.email }}
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña (opcional)</label>
+                <input type="password" name="new_password" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Dejar en blanco para no cambiar">
+                <p class="text-sm text-gray-500 mt-1">Solo complete si desea cambiar la contraseña</p>
+            </div>
+
+            <!-- Sección de Suscripción -->
+            <div class="md:col-span-2 border-t pt-6 mt-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-credit-card mr-2 text-blue-600"></i>
+                    Información de Suscripción
+                </h3>
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-tags mr-1 text-purple-500"></i>
+                    {{ form.subscription_plan.label }}
+                </label>
+                {{ form.subscription_plan }}
+                <p class="text-xs text-gray-500 mt-1">Seleccione el plan de suscripción para este parqueadero</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-calendar-alt mr-1 text-green-500"></i>
+                    {{ form.subscription_start.label }}
+                </label>
+                {{ form.subscription_start }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-calendar-check mr-1 text-red-500"></i>
+                    {{ form.subscription_end.label }}
+                </label>
+                {{ form.subscription_end }}
+            </div>
+
+            <!-- Información del Plan Actual -->
+            {% if parking_lot.subscription_plan %}
+            <div class="md:col-span-2 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <h4 class="font-semibold text-blue-900 mb-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Plan Actual
+                </h4>
+                <div class="grid grid-cols-2 gap-4 text-sm text-blue-800">
+                    <div>
+                        <strong>Plan:</strong> {{ parking_lot.subscription_plan.name }}
+                    </div>
+                    <div>
+                        <strong>Precio:</strong> ${{ parking_lot.subscription_plan.price|floatformat:0 }}
+                    </div>
+                    <div>
+                        <strong>Duración:</strong> {{ parking_lot.subscription_plan.duration_days }} días
+                    </div>
+                    <div>
+                        <strong>Estado:</strong> 
+                        {% if parking_lot.is_active %}
+                            <span class="text-green-600 font-semibold">✓ Activo</span>
+                        {% else %}
+                            <span class="text-red-600 font-semibold">✗ Inactivo</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="flex space-x-4 pt-4">
+            <button type="submit" class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                <i class="fas fa-save mr-2"></i>
+                Guardar Cambios
+            </button>
+            <a href="{% url 'superadmin_dashboard' %}" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center">
+                <i class="fas fa-times mr-2"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+    }
+    input:focus,
+    select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+</style>
+{% endblock %}

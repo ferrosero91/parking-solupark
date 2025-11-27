@@ -1,0 +1,148 @@
+{% extends 'parking/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="w-full max-w-4xl mx-auto px-2 sm:px-0">
+    <div class="glass-effect rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-gray-200">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <div class="flex-1">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                    Detalle de Mensualidad
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 mt-2 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>
+                    Información completa de la mensualidad
+                </p>
+            </div>
+            <div class="{% if mensualidad.estado == 'PAGADO' %}bg-green-100{% elif mensualidad.estado == 'PENDIENTE' %}bg-orange-100{% else %}bg-red-100{% endif %} p-3 sm:p-4 rounded-2xl shadow-lg">
+                <i class="fas {% if mensualidad.estado == 'PAGADO' %}fa-check-circle text-success{% elif mensualidad.estado == 'PENDIENTE' %}fa-clock text-warning{% else %}fa-exclamation-triangle text-danger{% endif %} text-2xl sm:text-3xl"></i>
+            </div>
+        </div>
+
+        <!-- Estado -->
+        <div class="mb-8 text-center">
+            {% if mensualidad.estado == 'PAGADO' %}
+                <span class="px-6 py-3 bg-success-light text-success-color rounded-xl text-lg font-bold inline-flex items-center">
+                    <i class="fas fa-check-circle mr-2 text-2xl"></i>PAGADO
+                </span>
+            {% elif mensualidad.estado == 'PENDIENTE' %}
+                <span class="px-6 py-3 bg-warning-light text-warning-color rounded-xl text-lg font-bold inline-flex items-center">
+                    <i class="fas fa-clock mr-2 text-2xl"></i>PENDIENTE
+                </span>
+            {% elif mensualidad.estado == 'VENCIDO' %}
+                <span class="px-6 py-3 bg-danger-light text-danger-color rounded-xl text-lg font-bold inline-flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2 text-2xl"></i>VENCIDO
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Información del Cliente -->
+        <div class="mb-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-user text-primary mr-2"></i>
+                Información del Cliente
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Nombre:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.cliente.nombre }}</span>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Documento:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.cliente.documento }}</span>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Teléfono:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.cliente.telefono|default:"-" }}</span>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Placa:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.cliente.placa }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de la Mensualidad -->
+        <div class="mb-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-calendar-check text-success mr-2"></i>
+                Detalles de la Mensualidad
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Categoría:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.category.name }}</span>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Monto:</span>
+                    <span class="font-bold text-gray-800 text-xl">${{ mensualidad.monto|floatformat:0|intcomma }}</span>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Fecha de Inicio:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.fecha_inicio|date:"d/m/Y" }}</span>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Fecha de Vencimiento:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.fecha_vencimiento|date:"d/m/Y" }}</span>
+                </div>
+                {% if mensualidad.esta_vigente %}
+                <div class="p-4 bg-success-light rounded-xl border-2 border-green-200">
+                    <span class="text-sm text-gray-600 block mb-1">Días Restantes:</span>
+                    <span class="font-bold text-success-color text-xl">{{ mensualidad.dias_restantes }} días</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Información de Pago -->
+        {% if mensualidad.estado == 'PAGADO' %}
+        <div class="mb-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-dollar-sign text-success mr-2"></i>
+                Información de Pago
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 bg-success-light rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Fecha de Pago:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.fecha_pago|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="p-4 bg-success-light rounded-xl">
+                    <span class="text-sm text-gray-600 block mb-1">Método de Pago:</span>
+                    <span class="font-bold text-gray-800">{{ mensualidad.metodo_pago|default:"No especificado" }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Observaciones -->
+        {% if mensualidad.observaciones %}
+        <div class="mb-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-comment text-primary mr-2"></i>
+                Observaciones
+            </h3>
+            <div class="p-4 bg-gray-50 rounded-xl">
+                <p class="text-gray-700">{{ mensualidad.observaciones }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Botones -->
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+            {% if mensualidad.estado == 'PENDIENTE' or mensualidad.estado == 'VENCIDO' %}
+            <a href="{% url 'mensualidad-pagar' pk=mensualidad.id %}" 
+               class="flex-1 gradient-success text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center">
+                <i class="fas fa-dollar-sign mr-2 text-lg sm:text-xl"></i>
+                Registrar Pago
+            </a>
+            {% endif %}
+            <a href="{% url 'mensualidad-list' %}"
+               class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all duration-300 flex items-center justify-center text-base sm:text-lg">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Volver
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

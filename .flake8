@@ -1,0 +1,26 @@
+[flake8]
+max-line-length = 120
+exclude = 
+    .git,
+    __pycache__,
+    */migrations/*,
+    venv,
+    env,
+    .venv,
+    staticfiles,
+    media,
+    build,
+    dist,
+    *.egg-info
+
+ignore = 
+    E203,  # whitespace before ':'
+    E501,  # line too long (handled by black)
+    W503,  # line break before binary operator
+    E402,  # module level import not at top of file
+
+per-file-ignores =
+    __init__.py:F401
+    settings.py:E501
+
+max-complexity = 10

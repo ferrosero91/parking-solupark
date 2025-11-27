@@ -1,0 +1,186 @@
+name: CI - Tests y Validaciones
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Tests y Linting
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11']
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black isort pylint bandit safety
+    
+    - name: Crear archivo .env para tests
+      run: |
+        echo "DEBUG=True" > .env
+        echo "SECRET_KEY=test-secret-key-for-ci-only" >> .env
+        echo "DATABASE_ENGINE=django.db.backends.postgresql" >> .env
+        echo "DATABASE_NAME=test_db" >> .env
+        echo "DATABASE_USER=test_user" >> .env
+        echo "DATABASE_PASSWORD=test_password" >> .env
+        echo "DATABASE_HOST=localhost" >> .env
+        echo "DATABASE_PORT=5432" >> .env
+        echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
+    
+    - name: Verificar formato con Black
+      run: |
+        black --check --diff parking/ parking_system/
+      continue-on-error: true
+    
+    - name: Verificar imports con isort
+      run: |
+        isort --check-only --diff parking/ parking_system/
+      continue-on-error: true
+    
+    - name: Linting con Flake8
+      run: |
+        flake8 parking/ parking_system/ --max-line-length=120 --exclude=migrations,__pycache__,venv --count --statistics
+      continue-on-error: true
+    
+    - name: Análisis de seguridad con Bandit
+      run: |
+        bandit -r parking/ parking_system/ -f json -o bandit-report.json || true
+        bandit -r parking/ parking_system/ -ll
+      continue-on-error: true
+    
+    - name: Verificar vulnerabilidades en dependencias
+      run: |
+        safety check --json || true
+      continue-on-error: true
+    
+    - name: Ejecutar migraciones
+      run: |
+        python manage.py migrate --noinput
+    
+    - name: Verificar sistema Django
+      run: |
+        python manage.py check --deploy
+    
+    - name: Ejecutar tests
+      run: |
+        python manage.py test --verbosity=2
+      env:
+        DATABASE_ENGINE: django.db.backends.postgresql
+        DATABASE_NAME: test_db
+        DATABASE_USER: test_user
+        DATABASE_PASSWORD: test_password
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+    
+    - name: Recolectar archivos estáticos
+      run: |
+        python manage.py collectstatic --noinput
+    
+    - name: Subir reporte de cobertura
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-reports-${{ matrix.python-version }}
+        path: |
+          bandit-report.json
+          .coverage
+        retention-days: 30
+
+  security-scan:
+    name: Escaneo de Seguridad
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+    
+    - name: Ejecutar Trivy para escaneo de vulnerabilidades
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Subir resultados a GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  build-check:
+    name: Verificar Build
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+    
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Verificar configuración
+      run: |
+        python check_config.py || true
+    
+    - name: Verificar que no hay archivos sensibles
+      run: |
+        if [ -f "db.sqlite3" ]; then
+          echo "⚠️ Advertencia: db.sqlite3 encontrado en el repositorio"
+          exit 1
+        fi
+        if grep -r "SECRET_KEY.*=" parking_system/settings.py | grep -v "os.environ"; then
+          echo "⚠️ Advertencia: SECRET_KEY hardcodeada encontrada"
+          exit 1
+        fi
+    
+    - name: Verificar .gitignore
+      run: |
+        if ! grep -q ".env" .gitignore; then
+          echo "⚠️ Advertencia: .env no está en .gitignore"
+          exit 1
+        fi
+        if ! grep -q "db.sqlite3" .gitignore; then
+          echo "⚠️ Advertencia: db.sqlite3 no está en .gitignore"
+          exit 1
+        fi
