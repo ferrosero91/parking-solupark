@@ -28,7 +28,6 @@ from .services import ReportService, TicketService, CashRegisterService, Securit
 from .utils import require_parking_lot, require_active_subscription, sanitize_plate
 
 
-@login_required
 def pagina_inicial(request):
     if request.user.is_authenticated:
         # Redirigir según el tipo de usuario
@@ -36,7 +35,8 @@ def pagina_inicial(request):
             return redirect('superadmin_dashboard')
         return redirect('dashboard')
     
-    return render(request, 'registration/login.html')
+    # Si no está autenticado, redirigir al login de parqueaderos
+    return redirect('login')
 
 
 class ParkingLotUpdateView(UpdateView):

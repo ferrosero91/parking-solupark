@@ -15,8 +15,24 @@ def is_superuser(user):
     return user.is_superuser
 
 
+def superuser_required(view_func):
+    """Decorador personalizado para requerir superusuario"""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('superadmin_login')
+        if not request.user.is_superuser:
+            messages.error(request, 'No tienes permisos para acceder a esta página.')
+            return redirect('superadmin_login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 def superadmin_login(request):
     """Login específico para superadministradores"""
+    # Limpiar mensajes antiguos al acceder al login
+    storage = messages.get_messages(request)
+    storage.used = True
+    
     if request.user.is_authenticated and request.user.is_superuser:
         return redirect('superadmin_dashboard')
     
@@ -39,8 +55,7 @@ def superadmin_login(request):
     return render(request, 'parking/superadmin/login.html')
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def superadmin_dashboard(request):
     """Dashboard del superadministrador"""
     parking_lots = ParkingLot.objects.all().select_related('user')
@@ -53,8 +68,7 @@ def superadmin_dashboard(request):
     return render(request, 'parking/superadmin/dashboard.html', context)
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def create_parking_lot(request):
     """Crear un nuevo parqueadero"""
     if request.method == 'POST':
@@ -138,8 +152,7 @@ def create_parking_lot(request):
     return render(request, 'parking/superadmin/create_parking_lot.html', {'form': form})
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def edit_parking_lot(request, pk):
     """Editar un parqueadero existente"""
     # SEGURIDAD: Solo superusuarios pueden editar cualquier parqueadero
@@ -186,8 +199,7 @@ def edit_parking_lot(request, pk):
     })
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def toggle_parking_lot_status(request, pk):
     """Activar/desactivar un parqueadero"""
     parking_lot = get_object_or_404(ParkingLot, pk=pk)
@@ -203,8 +215,7 @@ def toggle_parking_lot_status(request, pk):
     return redirect('superadmin_dashboard')
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def renew_subscription(request, pk):
     """Renovar suscripción de un parqueadero"""
     from django.utils import timezone
@@ -248,8 +259,7 @@ def renew_subscription(request, pk):
     })
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def delete_parking_lot(request, pk):
     """Eliminar un parqueadero"""
     parking_lot = get_object_or_404(ParkingLot, pk=pk)
@@ -268,8 +278,7 @@ def delete_parking_lot(request, pk):
 
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def payment_management(request):
     """Vista para gestionar pagos de suscripciones"""
     parking_lots = ParkingLot.objects.all().select_related('user')
@@ -296,8 +305,7 @@ def payment_management(request):
     return render(request, 'parking/superadmin/payment_management.html', context)
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def register_payment(request, pk):
     """Registrar un pago de suscripción"""
     from .models import SubscriptionPayment
@@ -370,8 +378,7 @@ def register_payment(request, pk):
     return render(request, 'parking/superadmin/register_payment.html', context)
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def payment_history(request, pk):
     """Ver historial de pagos de un parqueadero"""
     from .models import SubscriptionPayment
@@ -392,8 +399,7 @@ def payment_history(request, pk):
 
 
 
-@login_required
-@user_passes_test(is_superuser)
+@superuser_required
 def subscription_plans(request):
     """Vista para gestionar planes de suscripción"""
     from .models import SubscriptionPlan
