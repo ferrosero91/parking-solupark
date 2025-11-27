@@ -34,7 +34,7 @@ jobs:
         aws-region: us-east-1
     
     - name: Guardar backup como artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: database-backup-${{ github.run_number }}
         path: backup-*.tar.gz
