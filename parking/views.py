@@ -877,8 +877,8 @@ def cash_register(request):
     # Determinar si el usuario es vendedor
     is_vendedor = request.user.groups.filter(name='Vendedor').exists()
 
-    # Manejo de fechas usando el servicio
-    today = timezone.now().date()
+    # Manejo de fechas usando el servicio (en hora local)
+    today = timezone.localtime(timezone.now()).date()
 
     if is_vendedor:
         # Vendedores solo ven el día actual
